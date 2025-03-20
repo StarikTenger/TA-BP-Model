@@ -14,6 +14,15 @@ def process_dot_file(input_file, output_file):
         lines = label.split('\\n')
         ordered_lines = sorted(lines, key=lambda x: order.index(next((o for o in order if o in x), len(order))))
         return '\\n'.join(ordered_lines)
+    
+    def substitude_label(label):
+        label = label \
+            .replace('<<', '⟨')     \
+            .replace('>>', '⟩')     \
+            .replace('|->', '↦')    \
+            .replace('=', '\t=')    \
+            .replace('\\n', '\l')
+        return label + "\l"
 
     with open(output_file, 'w') as file:
         for line in lines:
@@ -21,7 +30,7 @@ def process_dot_file(input_file, output_file):
             if match:
                 label = match.group(1)
                 if label:
-                    reordered_label = reorder_label(label)
+                    reordered_label = substitude_label(reorder_label(label))
                     line = line.replace(label, reordered_label)
             file.write(line)
 
