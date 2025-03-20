@@ -9,7 +9,7 @@ VARIABLES StageIF, StageID, StageRS, StageFU, StageCOM, ROB
 VARIABLE PC
 
 \* idxuction types
-idxTypes == {"ALU", "MEM", "BR"}
+InstrTypes == {"ALU", "MEM", "BR"}
 
 FuncUnits == {"ALU", "LSU"}
 
@@ -17,21 +17,21 @@ FuncUnits == {"ALU", "LSU"}
 ChooseFu(type) ==
     CASE type = "ALU" -> "ALU"
       [] type = "MEM" -> "LSU"
-      [] type = "BR" -> "BR"
+      [] type = "BR" -> "ALU"
 
 \* Type safety invariant
 TypeOK == 
-    /\ prog ∈ Seq([number: Positive, type: idxTypes, data_deps: SUBSET Positive, control_deps: SUBSET Positive])
+    /\ prog ∈ Seq([idx: Positive, type: InstrTypes, data_deps: SUBSET Positive, control_deps: SUBSET Positive])
     /\ superscalar ∈ Positive
     /\ PC ∈ Positive
     /\ StageIF ∈ [1..superscalar -> SUBSET [idx: Positive, cycles_left: Positive]]
     /\ StageID ∈ [1..superscalar -> SUBSET [idx: Positive]]
-    /\ StageRS ∈ [FuncUnits -> SUBSET [idx: Positive]]
+    /\ StageRS ∈ [FuncUnits -> SUBSET Positive]
     /\ StageFU ∈ [FuncUnits -> SUBSET [idx: Positive, cycles_left: Positive]]
     /\ StageCOM ∈ [1..superscalar -> SUBSET [idx: Positive]]
 
     /\ ∀ s ∈ 1..superscalar :  
-        /\ Cardinality(StageFU[s]) <= 1
+        /\ Cardinality(StageIF[s]) <= 1
         /\ Cardinality(StageID[s]) <= 1
         /\ Cardinality(StageCOM[s]) <= 1
 
@@ -80,7 +80,7 @@ Done == {} \* TODO
 BusyFU(fu) == ∃ entry ∈ StageFU[fu] : entry.cycles_left > 1
 
 ExitRS(fu) == 
-    LET with_resolved_dep == {instr ∈ StageRS[fu] : (∀ dep ∈ prog[instr.idx].data_deps : dep ∈ Done)}
+    LET with_resolved_dep == {idx ∈ StageRS[fu] : (∀ dep ∈ prog[idx].data_deps : dep ∈ Done)}
     IN
     IF /\ ¬BusyFU(fu) \* FU is not busy
        /\ with_resolved_dep /= {} \* Can only take task with resolved dependencies
@@ -98,8 +98,11 @@ NextFU ==
         fu ∈ FuncUnits |-> 
         IF BusyFU(fu)
         THEN {[entry EXCEPT !.cycles_left = Decrement(@)] : entry ∈ StageFU[fu]}
-        ELSE ExitRS(fu)
+        ELSE {[idx |-> entry, cycles_left |-> 3] : entry ∈ ExitRS(fu)} \* TODO: proper latency
     ]
+
+NextPC ==
+    PC' = IF PC <= Len(prog) + 1 THEN PC + 1 ELSE PC
 
 Init == 
     /\ PC = 1
@@ -115,6 +118,10 @@ Next ==
     /\ NextID
     /\ NextRS
     /\ NextFU
+    /\ NextPC
+
+    /\ StageCOM' = [s ∈ 1..superscalar |-> {}]
+    /\ ROB' = ⟨⟩
 
 \* NextCOM
 \* NextROB
