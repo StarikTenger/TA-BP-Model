@@ -10,4 +10,6 @@ const_prog ==
 
 const_superscalar == 2
 
+inv_test == PC /= 6
+
 ====

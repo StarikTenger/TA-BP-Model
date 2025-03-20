@@ -2,19 +2,19 @@
 TLC2 Version 2.20 of Day Month 20?? (rev: 9c0dc07)
 @!@!@ENDMSG 2262 @!@!@
 @!@!@STARTMSG 2187:0 @!@!@
-Running breadth-first search Model-Checking with fp 85 and seed -4005341076531460322 with 1 worker on 8 cores with 5298MB heap and 64MB offheap memory [pid: 400548] (Linux 6.11.0-19-generic amd64, Ubuntu 21.0.6 x86_64, MSBDiskFPSet, DiskStateQueue).
+Running breadth-first search Model-Checking with fp 91 and seed 6027427937597769232 with 1 worker on 8 cores with 5298MB heap and 64MB offheap memory [pid: 516263] (Linux 6.11.0-19-generic amd64, Ubuntu 21.0.6 x86_64, MSBDiskFPSet, DiskStateQueue).
 @!@!@ENDMSG 2187 @!@!@
 @!@!@STARTMSG 2220:0 @!@!@
 Starting SANY...
 @!@!@ENDMSG 2220 @!@!@
 Parsing file /home/stariktenger/Internship2025/TA-BP-model/TestBench.tla
-Parsing file /tmp/tlc-7294315997858137088/TLC.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
+Parsing file /tmp/tlc-2346741886474997060/TLC.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/TLC.tla)
 Parsing file /home/stariktenger/Internship2025/TA-BP-model/Pipeline.tla
-Parsing file /tmp/tlc-7294315997858137088/Sequences.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
-Parsing file /tmp/tlc-7294315997858137088/Integers.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
+Parsing file /tmp/tlc-2346741886474997060/Sequences.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/Sequences.tla)
+Parsing file /tmp/tlc-2346741886474997060/Integers.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/Integers.tla)
 Parsing file /home/stariktenger/Internship2025/TA-BP-model/Util.tla
-Parsing file /tmp/tlc-7294315997858137088/FiniteSets.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
-Parsing file /tmp/tlc-7294315997858137088/Naturals.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
+Parsing file /tmp/tlc-2346741886474997060/FiniteSets.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/FiniteSets.tla)
+Parsing file /tmp/tlc-2346741886474997060/Naturals.tla (jar:file:/home/stariktenger/.vscode/extensions/tlaplus.vscode-ide-2025.3.191905/tools/tla2tools.jar!/tla2sany/StandardModules/Naturals.tla)
 Semantic processing of module Naturals
 Semantic processing of module Sequences
 Semantic processing of module FiniteSets
@@ -27,13 +27,13 @@ Semantic processing of module TestBench
 SANY finished.
 @!@!@ENDMSG 2219 @!@!@
 @!@!@STARTMSG 2185:0 @!@!@
-Starting... (2025-03-20 11:12:57)
+Starting... (2025-03-20 15:03:57)
 @!@!@ENDMSG 2185 @!@!@
 @!@!@STARTMSG 2189:0 @!@!@
 Computing initial states...
 @!@!@ENDMSG 2189 @!@!@
 @!@!@STARTMSG 2190:0 @!@!@
-Finished computing initial states: 1 distinct state generated at 2025-03-20 11:12:57.
+Finished computing initial states: 1 distinct state generated at 2025-03-20 15:03:58.
 @!@!@ENDMSG 2190 @!@!@
 @!@!@STARTMSG 2193:0 @!@!@
 Model checking completed. No error has been found.
@@ -42,7 +42,7 @@ Model checking completed. No error has been found.
   calculated (optimistic):  val = 7.0E-19
 @!@!@ENDMSG 2193 @!@!@
 @!@!@STARTMSG 2201:0 @!@!@
-The coverage statistics at 2025-03-20 11:12:57
+The coverage statistics at 2025-03-20 15:03:58
 @!@!@ENDMSG 2201 @!@!@
 @!@!@STARTMSG 2773:0 @!@!@
 <Init line 107, col 1 to line 107, col 4 of module Pipeline>: 1:1
@@ -96,7 +96,7 @@ The coverage statistics at 2025-03-20 11:12:57
   ||line 50, col 8 to line 50, col 58 of module Pipeline: 13
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  |||line 50, col 38 to line 50, col 58 of module Pipeline: 5
+  |||line 50, col 38 to line 50, col 58 of module Pipeline: 3
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   |||line 50, col 18 to line 50, col 34 of module Pipeline: 13
@@ -105,7 +105,7 @@ The coverage statistics at 2025-03-20 11:12:57
   ||||line 15, col 5 to line 15, col 36 of module Util: 13
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2775:0 @!@!@
-  |||||line 15, col 11 to line 15, col 36 of module Util: 13:18
+  |||||line 15, col 11 to line 15, col 36 of module Util: 13:16
 @!@!@ENDMSG 2775 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   ||||||line 15, col 12 to line 15, col 17 of module Util: 26
@@ -162,19 +162,19 @@ The coverage statistics at 2025-03-20 11:12:57
   ||line 98, col 14 to line 98, col 22 of module Pipeline: 13
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  line 105, col 5 to line 105, col 52 of module Pipeline: 13
+  line 105, col 5 to line 105, col 58 of module Pipeline: 13
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  |line 105, col 11 to line 105, col 52 of module Pipeline: 13
+  |line 105, col 11 to line 105, col 58 of module Pipeline: 13
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||line 105, col 14 to line 105, col 32 of module Pipeline: 13
+  ||line 105, col 14 to line 105, col 28 of module Pipeline: 13
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||line 105, col 39 to line 105, col 44 of module Pipeline: 4
+  ||line 105, col 35 to line 105, col 50 of module Pipeline: 2
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
-  ||line 105, col 51 to line 105, col 52 of module Pipeline: 9
+  ||line 105, col 57 to line 105, col 58 of module Pipeline: 11
 @!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2221:0 @!@!@
   line 123, col 8 to line 123, col 46 of module Pipeline: 13
@@ -275,11 +275,17 @@ The coverage statistics at 2025-03-20 11:12:57
 @!@!@STARTMSG 2221:0 @!@!@
   |line 42, col 8 to line 42, col 33 of module Pipeline: 13
 @!@!@ENDMSG 2221 @!@!@
+@!@!@STARTMSG 2774:0 @!@!@
+<inv_test line 13, col 1 to line 13, col 8 of module TestBench>
+@!@!@ENDMSG 2774 @!@!@
+@!@!@STARTMSG 2221:0 @!@!@
+  line 13, col 13 to line 13, col 19 of module TestBench: 13
+@!@!@ENDMSG 2221 @!@!@
 @!@!@STARTMSG 2202:0 @!@!@
 End of statistics.
 @!@!@ENDMSG 2202 @!@!@
 @!@!@STARTMSG 2200:0 @!@!@
-Progress(13) at 2025-03-20 11:12:57: 14 states generated (1,423 s/min), 13 distinct states found (1,322 ds/min), 0 states left on queue.
+Progress(13) at 2025-03-20 15:03:58: 14 states generated (1,359 s/min), 13 distinct states found (1,262 ds/min), 0 states left on queue.
 @!@!@ENDMSG 2200 @!@!@
 @!@!@STARTMSG 2199:0 @!@!@
 14 states generated, 13 distinct states found, 0 states left on queue.
@@ -291,5 +297,5 @@ The depth of the complete state graph search is 13.
 The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 1 and the 95th percentile is 1).
 @!@!@ENDMSG 2268 @!@!@
 @!@!@STARTMSG 2186:0 @!@!@
-Finished in 595ms at (2025-03-20 11:12:57)
+Finished in 623ms at (2025-03-20 15:03:58)
 @!@!@ENDMSG 2186 @!@!@

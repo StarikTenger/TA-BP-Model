@@ -102,7 +102,7 @@ NextFU ==
     ]
 
 NextPC ==
-    PC' = IF PC <= Len(prog) + 1 THEN PC + 1 ELSE PC
+    PC' = IF PC <= Len(prog) THEN PC + superscalar ELSE PC
 
 Init == 
     /\ PC = 1
