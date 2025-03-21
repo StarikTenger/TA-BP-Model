@@ -23,9 +23,17 @@ ChooseFu(type) ==
       [] type = "MEM" -> "LSU"
       [] type = "BR" -> "ALU"
 
+
 \* Type safety invariant
 TypeOK == 
-    /\ prog ∈ Seq([idx: Positive, type: InstrTypes, data_deps: SUBSET Positive, control_deps: SUBSET Positive])
+    /\ prog ∈ Seq([
+        idx: Positive, 
+        type: InstrTypes, 
+        data_deps: SUBSET Positive, 
+        control_deps: SUBSET Positive, 
+        LatIF: Positive, 
+        LatFU: Positive
+        ])
     /\ superscalar ∈ Positive
     /\ PC ∈ Positive
     /\ StageIF ∈ [1..superscalar -> SUBSET [idx: Positive, cycles_left: Positive]]
@@ -63,7 +71,7 @@ NextIF ==
             THEN {}
             ELSE
               {[idx |-> PC - 1 + s, 
-                cycles_left |-> 1]}
+                cycles_left |-> prog[PC - 1 + s].LatIF]}
         ] \* TODO: add latencies
     ELSE 
         StageIF' = [
@@ -103,7 +111,7 @@ NextFU ==
         fu ∈ FuncUnits |-> 
         IF BusyFU(fu)
         THEN {[entry EXCEPT !.cycles_left = Decrement(@)] : entry ∈ StageFU[fu]}
-        ELSE {[idx |-> entry, cycles_left |-> 3] : entry ∈ EnterFU(fu)} \* TODO: proper latency
+        ELSE {[idx |-> entry, cycles_left |-> prog[entry].LatFU] : entry ∈ EnterFU(fu)}
     ]
 
 NextReady ==
@@ -137,7 +145,7 @@ NextCOM ==
     
 
 NextPC ==
-    PC' = IF PC <= Len(prog) THEN PC + superscalar ELSE PC
+    PC' = IF PC <= Len(prog) /\ CanProgressIF THEN PC + superscalar ELSE PC
 
 ExecutionFinished ==
     UNCHANGED ⟨StageIF, StageID, StageRS, StageFU, ROB, StageCOM⟩
