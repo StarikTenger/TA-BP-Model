@@ -14,4 +14,13 @@ Unwrap(X) ==
 AllInSeq(seq) ==
     UNION {seq[i] : i ∈ 1..Len(seq)}
 
+Max(set) ==
+    CHOOSE x ∈ set : ∀ x1 ∈ set : x >= x1
+
+Min(set) ==
+    CHOOSE x ∈ set : ∀ x1 ∈ set : x <= x1
+
+DropHead(seq, n) ==
+    [i ∈ 1..(Len(seq) - n) |-> seq[i + n]]
+
 ====

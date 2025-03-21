@@ -10,7 +10,7 @@ def process_dot_file(input_file, output_file):
 
 
     def reorder_label(label):
-        order = ['PC', 'StageIF', 'StageID', 'StageRS', 'StageFU', 'ROB', 'StageCOM']
+        order = ['ClockCycle', 'PC', 'StageIF', 'StageID', 'StageRS', 'StageFU', 'ROB', 'StageCOM', 'Ready']
         lines = label.split('\\n')
         ordered_lines = sorted(lines, key=lambda x: order.index(next((o for o in order if o in x), len(order))))
         return '\\n'.join(ordered_lines)
@@ -21,7 +21,7 @@ def process_dot_file(input_file, output_file):
             .replace('>>', '⟩')     \
             .replace('|->', '↦')    \
             .replace('=', '\t=')    \
-            .replace('\\n', '\l')
+            .replace('\\n', '\\l')
         return label + "\l"
 
     with open(output_file, 'w') as file:
