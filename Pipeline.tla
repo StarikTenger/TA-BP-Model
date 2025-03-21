@@ -83,7 +83,9 @@ EnterRS(fu) == {i ∈ {entry : entry ∈ AllInSeq(StageID)} : ChooseFu(prog[i].t
 BusyFU(fu) == ∃ entry ∈ StageFU[fu] : entry.cycles_left > 1
 
 EnterFU(fu) == 
-    LET with_resolved_dep == {idx ∈ StageRS[fu] ∪ AllInSeq(StageID) : (∀ dep ∈ prog[idx].data_deps : dep ∈ Ready)}
+    LET with_resolved_dep == {
+        idx ∈ StageRS[fu] ∪ {i ∈ AllInSeq(StageID) : ChooseFu(prog[i].type) = fu} : 
+        (∀ dep ∈ prog[idx].data_deps : dep ∈ Ready)}
     IN
     IF /\ ¬BusyFU(fu) \* FU is not busy
        /\ with_resolved_dep /= {} \* Can only take task with resolved dependencies
