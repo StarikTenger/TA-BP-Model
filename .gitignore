@@ -1,3 +1,4 @@
 .vscode
 states
 tmp
+*.out
