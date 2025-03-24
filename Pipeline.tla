@@ -142,13 +142,13 @@ NextReady ==
             entry ∈ UNION {StageFU'[fu] : fu ∈ FuncUnits} :
             entry.cycles_left = 1
         }
-    }
+    }    
 
 NextROB ==
     ROB' = Erase(
     LET RobAppend == \* TODO: this does not allow bubbles in ID stage:
     IF CanProgressID /\ ∃ s ∈ 1..superscalar : StageID[s] /= {}
-    THEN ROB ∘ [s ∈ {s ∈ 1..superscalar : StageID[s] /= {}} |-> Unwrap(StageID[s])]
+    THEN ROB ∘ FlattenSeq(StageID)
     ELSE ROB
     IN
     LET commit_number == Min({superscalar, Len(ROB)}) IN
@@ -188,6 +188,7 @@ next_valid(i) ==
 
 NextPC ==
     PC' = 
+        IF PC = 0 THEN 1 ELSE
         IF PC <= Len(prog) /\ CanProgressIF 
         THEN next_valid(PC + superscalar)
         ELSE PC

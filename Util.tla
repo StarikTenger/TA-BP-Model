@@ -30,4 +30,11 @@ Erase(seq, set) ==
     THEN ⟨⟩
     ELSE (IF Head(seq) ∉ set THEN ⟨Head(seq)⟩ ELSE ⟨⟩) ∘ Erase(Tail(seq), set)
 
+
+RECURSIVE FlattenSeq(_)
+FlattenSeq(seq) ==
+    IF seq = ⟨⟩ THEN ⟨⟩ ELSE 
+    (IF Head(seq) = {} THEN ⟨⟩ ELSE
+    ⟨Unwrap(Head(seq))⟩) ∘ FlattenSeq(Tail(seq))
+
 ====

@@ -12,7 +12,7 @@ const_prog ==
     [idx |-> 6, type |-> "ALU", data_deps |-> {}, spec_of |-> {}, LatIF |-> 1, LatFU |-> 1]
 ⟩
 
-const_superscalar == 1
+const_superscalar == 2
 
 
 ====
