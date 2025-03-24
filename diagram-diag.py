@@ -37,7 +37,7 @@ for label in labels:
             idx_pattern = re.compile(r'\d+')
             idx_matches = idx_pattern.findall(line)
             for idx in idx_matches:
-                table[(int(idx), clock_cycle)] = '...'
+                table[(int(idx), clock_cycle)] = 'rs'
         if 'StageFU' in line:
             idx_pattern = re.compile(r'(\w+)\s*\|->\s*\{\[idx\s*\|->\s*(\d+)')
             idx_matches = idx_pattern.findall(line)
@@ -48,12 +48,18 @@ for label in labels:
             idx_matches = idx_pattern.findall(line)
             for idx in idx_matches:
                 if (int(idx), clock_cycle) not in table:
-                    table[(int(idx), clock_cycle)] = '...'
+                    table[(int(idx), clock_cycle)] = 'rob'
         if 'StageCOM' in line:
             idx_pattern = re.compile(r'\d+')
             idx_matches = idx_pattern.findall(line)
             for idx in idx_matches:
                 table[(int(idx), clock_cycle)] = 'COM'
+        if 'Squashed' in line:
+            idx_pattern = re.compile(r'\d+')
+            idx_matches = idx_pattern.findall(line)
+            for idx in idx_matches:
+                if (int(idx), clock_cycle - 1) in table and table[(int(idx), clock_cycle - 1)] != '#squashed':
+                    table[(int(idx), clock_cycle)] = '#squashed'
     clock_cycle += 1
 
 # Determine the maximum index and clock cycle for table dimensions

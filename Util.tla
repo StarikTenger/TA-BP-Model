@@ -23,4 +23,11 @@ Min(set) ==
 DropHead(seq, n) ==
     [i ∈ 1..(Len(seq) - n) |-> seq[i + n]]
 
+RECURSIVE Erase(_,_)
+
+Erase(seq, set) ==
+    IF seq = ⟨⟩
+    THEN ⟨⟩
+    ELSE (IF Head(seq) ∉ set THEN ⟨Head(seq)⟩ ELSE ⟨⟩) ∘ Erase(Tail(seq), set)
+
 ====
