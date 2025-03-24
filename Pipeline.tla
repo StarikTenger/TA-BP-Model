@@ -144,6 +144,13 @@ NextReady ==
         }
     }    
 
+CommitNumber ==
+    Min({superscalar, Len(ROB)})
+
+CanCommit ==
+    LET commit_number == Min({superscalar, Len(ROB)}) IN
+    commit_number > 0 /\ ∀ s ∈ 1..commit_number : ROB[s] ∈ Ready /\ prog[ROB[s]].spec_of = {}
+
 NextROB ==
     ROB' = Erase(
     LET RobAppend == \* TODO: this does not allow bubbles in ID stage:
@@ -151,19 +158,17 @@ NextROB ==
     THEN ROB ∘ FlattenSeq(StageID)
     ELSE ROB
     IN
-    LET commit_number == Min({superscalar, Len(ROB)}) IN
-    IF commit_number > 0 /\ ∀ s ∈ 1..commit_number : ROB[s] ∈ Ready \* TODO: check if spec
-    THEN DropHead(RobAppend, commit_number)
+    IF CanCommit
+    THEN DropHead(RobAppend, CommitNumber)
     ELSE RobAppend
     ,Squashed')
     
 
 NextCOM ==
-    LET commit_number == Min({superscalar, Len(ROB)}) IN
-    IF commit_number > 0 /\ ∀ s ∈ 1..commit_number : ROB[s] ∈ Ready \* TODO: check if spec
+    IF CanCommit
     THEN StageCOM' = 
-        [s ∈ 1..commit_number |-> {ROB[s]}] ∘ 
-        [s ∈ 1..(superscalar - commit_number) |-> {}]
+        [s ∈ 1..CommitNumber |-> {ROB[s]}] ∘ 
+        [s ∈ 1..(superscalar - CommitNumber) |-> {}]
     ELSE StageCOM' = [s ∈ 1..superscalar |-> {}]
     
 
