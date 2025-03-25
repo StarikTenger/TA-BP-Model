@@ -4,7 +4,7 @@ echo $model_name
 
 tlc -dump dot $model_name.dot $model_name.tla
 
-python3 diagram-diag.py $model_name.dot > tmp/diagram.txt
+python3 diagram-diag.py $model_name.dot > tmp/diagram.trd
 
 python3 pretty-graph.py $model_name.dot $model_name.pretty.dot
 dot -Tpng $model_name.pretty.dot > $model_name.png

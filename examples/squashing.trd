@@ -1,0 +1,20 @@
+	1	2	3	4	5	6	7	8	9	10	11
+1	IF	ID	LSU	LSU	LSU	LSU	COM				
+2		IF	ID	rs	rs	rs	LSU	COM			
+3			IF	ID	ALU	rob	rob	#squashed			
+4				IF	ID	ALU	rob	#squashed			
+5					IF	ID	#squashed				
+6						IF	#squashed				
+7							IF	#squashed			
+8								IF	ID	ALU	COM
+
+
+	1	2	3	4	5	6	7	8
+1	IF	ID	LSU	COM				
+2		IF	ID	LSU	COM			
+3			IF	ID	#squashed			
+4				IF	#squashed			
+5								
+6								
+7								
+8					IF	ID	ALU	COM
