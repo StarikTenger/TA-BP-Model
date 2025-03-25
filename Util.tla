@@ -30,11 +30,21 @@ Erase(seq, set) ==
     THEN ⟨⟩
     ELSE (IF Head(seq) ∉ set THEN ⟨Head(seq)⟩ ELSE ⟨⟩) ∘ Erase(Tail(seq), set)
 
-
+\* ⟨{1}, {2}, {}, {3}⟩ -> ⟨1,2,3⟩
 RECURSIVE FlattenSeq(_)
 FlattenSeq(seq) ==
     IF seq = ⟨⟩ THEN ⟨⟩ ELSE 
     (IF Head(seq) = {} THEN ⟨⟩ ELSE
     ⟨Unwrap(Head(seq))⟩) ∘ FlattenSeq(Tail(seq))
+
+RECURSIVE __CartProd(_)
+__CartProd(seq) == 
+    IF Len(seq) = 1 THEN {⟨entry⟩ : entry ∈ seq[1]} ELSE Head(seq) × __CartProd(Tail(seq))
+
+RECURSIVE Flatten(_)
+Flatten(seq) == 
+    IF Len(seq) = 1 THEN ⟨seq[1]⟩ ELSE ⟨seq[1]⟩ ∘ Flatten(Tail(seq)[1])
+
+CartProd(seq) == {Flatten(entry) : entry ∈ __CartProd(seq)}
 
 ====
