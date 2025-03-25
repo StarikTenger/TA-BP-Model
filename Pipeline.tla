@@ -35,8 +35,8 @@ TypeOK ==
         type: InstrTypes, 
         data_deps: SUBSET Positive, 
         spec_of: SUBSET Positive, 
-        LatIF: Positive, 
-        LatFU: Positive
+        LatIF: SUBSET Positive, 
+        LatFU: SUBSET Positive
         ])
     /\ superscalar ∈ Positive
     /\ PC ∈ Nat
@@ -70,7 +70,10 @@ CanProgressIF ==
 SquashIF(stage) ==
     [s ∈ 1..superscalar |-> {entry ∈ stage[s] : entry.idx ∉ Squashed'}]    
 
+AllLatIF == CartProd([i ∈ 1..Len(prog) |-> prog[i].LatIF])
+
 NextIF ==
+    ∃ lats ∈ AllLatIF :
     StageIF' = SquashIF(
     IF CanProgressIF
     THEN 
@@ -80,7 +83,7 @@ NextIF ==
             THEN {}
             ELSE
               {[idx |-> PC' - 1 + s, 
-                cycles_left |-> prog[PC' - 1 + s].LatIF]}
+                cycles_left |-> lats[PC' - 1 + s]]}
         ]
     ELSE 
         [
@@ -92,11 +95,11 @@ NextIF ==
 SquashID(stage) ==
     [s ∈ 1..superscalar |-> {entry ∈ stage[s] : entry ∉ Squashed'}]
 
-NextID ==
+NextID == \* TODO: fix it, not sure that correct
     StageID' = SquashID(
-    IF CanProgressID
+    IF CanProgressIF
     THEN [i ∈ 1..superscalar |-> {entry.idx : entry ∈ StageIF[i]}]
-    ELSE StageID
+    ELSE [i ∈ 1..superscalar |-> {}]
     )
 
 \*                     Map                                            Filter
@@ -128,12 +131,15 @@ NextRS ==
 SquashFU(stage) ==
     [fu ∈ FuncUnits |-> {entry ∈ stage[fu] : entry.idx ∉ Squashed'}]
 
+AllLatFU == CartProd([i ∈ 1..Len(prog) |-> prog[i].LatFU])
+
 NextFU ==
+    ∃ lats ∈ AllLatFU :
     StageFU' = SquashFU(
         [fu ∈ FuncUnits |-> 
             IF BusyFU(fu)
             THEN {[entry EXCEPT !.cycles_left = Decrement(@)] : entry ∈ StageFU[fu]}
-            ELSE {[idx |-> entry, cycles_left |-> prog[entry].LatFU] : entry ∈ EnterFU(fu)}
+            ELSE {[idx |-> entry, cycles_left |-> lats[entry]] : entry ∈ EnterFU(fu)}
         ]
     )
 
