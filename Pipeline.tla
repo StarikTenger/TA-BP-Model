@@ -15,7 +15,8 @@ VARIABLE ClockCycle
 VARIABLE PC
 
 \* idxuction types
-InstrTypes == {"ALU", "MEM", "BR"}
+InstrTypes == {"ALU", "MEM", "BR_ALU", "BR_MEM"}
+BranchInstr == {"BR_ALU", "BR_MEM"}
 
 FuncUnits == {"ALU", "LSU"}
 
@@ -23,7 +24,8 @@ FuncUnits == {"ALU", "LSU"}
 ChooseFu(type) ==
     CASE type = "ALU" -> "ALU"
       [] type = "MEM" -> "LSU"
-      [] type = "BR" -> "ALU"
+      [] type = "BR_ALU" -> "ALU"
+      [] type = "BR_MEM" -> "LSU"
 
 
 \* Type safety invariant
@@ -181,7 +183,7 @@ NextSquashed ==
             SquashedBy(entry.idx) : 
             entry ∈ {
                 entry ∈ UNION {StageFU[fu] : fu ∈ FuncUnits } : 
-                prog[entry.idx].type = "BR" /\ entry.cycles_left = 1
+                prog[entry.idx].type ∈ BranchInstr /\ entry.cycles_left = 1
             }
         }
 
