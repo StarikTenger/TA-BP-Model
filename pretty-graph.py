@@ -12,7 +12,8 @@ def process_dot_file(input_file, output_file):
     def reorder_label(label):
         order = ['ClockCycle', 'PC', 'StageIF', 'StageID', 'StageRS', 'StageFU', 'ROB', 'StageCOM', 'Ready', 'Squashed']
         lines = label.split('\\n')
-        ordered_lines = sorted(lines, key=lambda x: order.index(next((o for o in order if o in x), len(order))))
+        filtered_lines = [line for line in lines if any(o in line for o in order)]
+        ordered_lines = sorted(filtered_lines, key=lambda x: order.index(next((o for o in order if o in x), len(order))))
         return '\\n'.join(ordered_lines)
     
     def substitude_label(label):

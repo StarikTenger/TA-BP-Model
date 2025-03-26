@@ -2,6 +2,7 @@
 EXTENDS TLC, Sequences, Integers, Util, FiniteSets
 
 CONSTANT prog, superscalar
+CONSTANT BranchDivergence
 
 VARIABLES StageIF, StageID, StageRS, StageFU, StageCOM
 
@@ -182,7 +183,10 @@ NextCOM ==
 
 SquashedBy(idx) == {i ∈ 1..Len(prog) : idx ∈ prog[i].spec_of}
 
+AllBranches == CartProd([i ∈ 1..Len(prog) |-> IF prog[i].type ∈ BranchInstr THEN {TRUE, FALSE} ELSE {FALSE}])
+
 NextSquashed ==
+    ∃ branch_decision ∈ AllBranches :
     Squashed' = 
         Squashed ∪ 
         UNION {
@@ -190,6 +194,12 @@ NextSquashed ==
             entry ∈ {
                 entry ∈ UNION {StageFU[fu] : fu ∈ FuncUnits } : 
                 prog[entry.idx].type ∈ BranchInstr /\ entry.cycles_left = 1
+            }
+        } ∪
+        UNION {
+            SquashedBy(entry.idx) : 
+            entry ∈ {
+                entry ∈ AllInSeq(StageIF) : branch_decision[entry.idx]
             }
         }
 
