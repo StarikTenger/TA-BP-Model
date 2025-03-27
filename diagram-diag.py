@@ -3,19 +3,43 @@ import sys
 
 input_file = sys.argv[1]
 
-with open(input_file, 'r') as file:
-    lines = file.readlines()
-
-label_pattern = re.compile(r'label\s*=\s*"(.*?)"')
+file_format = input_file.split('.')[-1]
 
 labels = []
 
-for line in lines:
-    match = label_pattern.search(line)
-    if match:
-        label = match.group(1)
-        if label:
-            labels.append(label)
+if file_format == 'dot':
+    with open(input_file, 'r') as file:
+        lines = file.readlines()
+
+    label_pattern = re.compile(r'label\s*=\s*"(.*?)"')
+
+    for line in lines:
+        match = label_pattern.search(line)
+        if match:
+            label = match.group(1)
+            if label:
+                labels.append(label)
+
+elif file_format == 'txt':
+    with open(input_file, 'r') as file:
+        lines = file.readlines()
+
+        state_pattern = re.compile(r'State \d+:')
+        label_pattern = re.compile(r'/\\ (.*?) = (.*)')
+
+        current_label = []
+        for line in lines:
+            if state_pattern.match(line):
+                if current_label:
+                    labels.append('\\n'.join(current_label))
+                    current_label = []
+            else:
+                match = label_pattern.match(line.strip())
+                if match:
+                    key, value = match.groups()
+                    current_label.append(f"{key} |-> {value}")
+        if current_label:
+            labels.append('\\n'.join(current_label))
 
 table = {}
 
