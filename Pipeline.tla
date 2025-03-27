@@ -111,12 +111,12 @@ NextID == \* TODO: fix it, not sure that correct
 EnterRS(fu) == {i ∈ {entry : entry ∈ AllInSeq(StageID)} : ChooseFu(prog[i].type) = fu}
 
 \* FU is busy next cycle
-BusyFU(fu) == ∃ entry ∈ StageFU[fu] : entry.cycles_left > 1
+BusyFU(fu) == ∃ entry ∈ StageFU[fu] : entry.idx ∉ Squashed' /\ entry.cycles_left > 1
 
 EnterFU(fu) == 
-    LET with_resolved_dep == {
+    LET with_resolved_dep == {idx ∈ {
         idx ∈ StageRS[fu] ∪ {i ∈ AllInSeq(StageID) : ChooseFu(prog[i].type) = fu} : 
-        (∀ dep ∈ prog[idx].data_deps : dep ∈ Ready)}
+        (∀ dep ∈ prog[idx].data_deps : dep ∈ Ready)} : idx ∉ Squashed'}
     IN
     IF /\ ¬BusyFU(fu) \* FU is not busy
        /\ with_resolved_dep /= {} \* Can only take task with resolved dependencies
