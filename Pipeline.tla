@@ -10,10 +10,13 @@ VARIABLE ROB, Ready
 
 VARIABLE Squashed
 
+VARIABLE Commited
+
 VARIABLE ClockCycle
 
 \* idxuction number to fetch next
 VARIABLE PC
+
 
 \* idxuction types
 InstrTypes == {"ALU", "MEM", "BR_ALU", "BR_MEM"}
@@ -59,6 +62,7 @@ TypeOK ==
     /\ ROB ∈ Seq(Positive)
     /\ Ready ∈ SUBSET Positive
     /\ Squashed ∈ SUBSET Positive
+    /\ Commited ∈ SUBSET Positive
 
 
 \* We assume that RS are infinite, so ID can always progress
@@ -217,10 +221,14 @@ NextPC ==
         ELSE PC
 
 ExecutionFinished ==
-    UNCHANGED ⟨StageIF, StageID, StageRS, StageFU, ROB, StageCOM⟩
+    \* UNCHANGED ⟨StageIF, StageID, StageRS, StageFU, ROB, StageCOM⟩
+    ∀ i ∈ 1..Len(prog) : i ∈ Commited ∪ Squashed
 
 NextClockCycle ==
     ClockCycle' = IF ExecutionFinished THEN ClockCycle ELSE ClockCycle + 1
+
+NextCommited ==
+    Commited' = Commited ∪ AllInSeq(StageCOM)
 
 Init == 
     /\ PC = 0
@@ -232,6 +240,7 @@ Init ==
     /\ ROB = ⟨⟩
     /\ Ready = {}
     /\ Squashed = {}
+    /\ Commited = {}
     /\ ClockCycle = 0
     
 Next == 
@@ -247,8 +256,9 @@ Next ==
     /\ NextROB
     /\ NextReady
     /\ NextClockCycle
+    /\ NextCommited
 
-\* NextCOM
-\* NextROB
+TimeExceed(t) ==
+    ExecutionFinished /\ ClockCycle > t
 
 ====
