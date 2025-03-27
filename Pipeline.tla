@@ -187,7 +187,10 @@ NextCOM ==
 
 SquashedBy(idx) == {i ∈ 1..Len(prog) : idx ∈ prog[i].spec_of}
 
-AllBranches == CartProd([i ∈ 1..Len(prog) |-> IF prog[i].type ∈ BranchInstr THEN {TRUE, FALSE} ELSE {FALSE}])
+AllBranches == 
+    IF BranchDivergence
+    THEN CartProd([i ∈ 1..Len(prog) |-> IF prog[i].type ∈ BranchInstr THEN {TRUE, FALSE} ELSE {FALSE}])
+    ELSE {[i ∈ 1..Len(prog) |-> FALSE]}
 
 NextSquashed ==
     ∃ branch_decision ∈ AllBranches :
