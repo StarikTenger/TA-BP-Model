@@ -27,7 +27,8 @@ FuncUnits == InstrTypes\*{"FU1", "FU2", "FU3", "FU4"}
 \* Chose FU for idxuction of a given type
 ChooseFu(type) == type
 
-
+BranchInstr == 
+    {i ∈ 1..Len(prog) : ∃ j ∈ 1..Len(prog) : i ∈ prog[j].spec_of}
 
 \* Type safety invariant
 TypeOK == 
@@ -184,7 +185,11 @@ SquashedBy(idx) == {i ∈ 1..Len(prog) : idx ∈ prog[i].spec_of}
 
 AllBranches == 
     IF BranchDivergence
-    THEN CartProd([i ∈ 1..Len(prog) |-> {TRUE, FALSE}])
+    THEN 
+        CartProd(
+            [i ∈ 1..Len(prog) |-> 
+            IF i ∈ BranchInstr /\ i ∈ {entry.idx : entry ∈ AllInSeq(StageIF)} 
+            THEN {TRUE, FALSE} ELSE {FALSE}])
     ELSE {[i ∈ 1..Len(prog) |-> FALSE]}
 
 NextSquashed ==
