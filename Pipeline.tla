@@ -73,7 +73,12 @@ CanProgressIF ==
 SquashIF(stage) ==
     [s ∈ 1..superscalar |-> {entry ∈ stage[s] : entry.idx ∉ Squashed'}]    
 
-AllLatIF == CartProd([i ∈ 1..Len(prog) |-> prog[i].LatIF])
+AllLatIF == 
+    CartProd([
+        s ∈ 1..superscalar |-> 
+        IF PC' - 1 + s <= Len(prog)
+        THEN prog[PC' - 1 + s].LatIF ELSE {0}
+    ])
 
 NextIF ==
     ∃ lats ∈ AllLatIF :
@@ -86,7 +91,7 @@ NextIF ==
             THEN {}
             ELSE
               {[idx |-> PC' - 1 + s, 
-                cycles_left |-> lats[PC' - 1 + s]]}
+                cycles_left |-> lats[s]]}
         ]
     ELSE 
         [
@@ -132,7 +137,12 @@ NextRS ==
 SquashFU(stage) ==
     [fu ∈ FuncUnits |-> {entry ∈ stage[fu] : entry.idx ∉ Squashed'}]
 
-AllLatFU == CartProd([i ∈ 1..Len(prog) |-> prog[i].LatFU])
+AllLatFU == 
+    CartProd([
+        i ∈ 1..Len(prog) |-> 
+        IF i ∈ UNION {EnterFU(fu) : fu ∈ FuncUnits}
+        THEN prog[i].LatFU ELSE {0}
+    ])
 
 NextFU ==
     ∃ lats ∈ AllLatFU :
