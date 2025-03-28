@@ -19,17 +19,14 @@ VARIABLE PC
 
 
 \* idxuction types
-InstrTypes == {"ALU", "MEM", "BR_ALU", "BR_MEM"}
-BranchInstr == {"BR_ALU", "BR_MEM"}
+InstrTypes == {"FU1", "FU2", "FU3", "FU4"}
+\* BranchInstr == {"BR_ALU", "BR_MEM", "BR_FU1", "BR_FU2", "BR_FU3", "BR_FU4"}
 
-FuncUnits == {"ALU", "LSU"}
+FuncUnits == InstrTypes\*{"FU1", "FU2", "FU3", "FU4"}
 
 \* Chose FU for idxuction of a given type
-ChooseFu(type) ==
-    CASE type = "ALU" -> "ALU"
-      [] type = "MEM" -> "LSU"
-      [] type = "BR_ALU" -> "ALU"
-      [] type = "BR_MEM" -> "LSU"
+ChooseFu(type) == type
+
 
 
 \* Type safety invariant
@@ -125,8 +122,6 @@ EnterFU(fu) ==
     ELSE 
         {}
 
-
-
 SquashRS(stage) ==
     [fu ∈ FuncUnits |-> {entry ∈ stage[fu] : entry ∉ Squashed'}]
 
@@ -189,7 +184,7 @@ SquashedBy(idx) == {i ∈ 1..Len(prog) : idx ∈ prog[i].spec_of}
 
 AllBranches == 
     IF BranchDivergence
-    THEN CartProd([i ∈ 1..Len(prog) |-> IF prog[i].type ∈ BranchInstr THEN {TRUE, FALSE} ELSE {FALSE}])
+    THEN CartProd([i ∈ 1..Len(prog) |-> {TRUE, FALSE}])
     ELSE {[i ∈ 1..Len(prog) |-> FALSE]}
 
 NextSquashed ==
@@ -200,7 +195,7 @@ NextSquashed ==
             SquashedBy(entry.idx) : 
             entry ∈ {
                 entry ∈ UNION {StageFU[fu] : fu ∈ FuncUnits } : 
-                prog[entry.idx].type ∈ BranchInstr /\ entry.cycles_left = 1
+                entry.cycles_left = 1
             }
         } ∪
         UNION {

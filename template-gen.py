@@ -53,8 +53,7 @@ for instruction in instructions:
     while branch_stack and branch_stack[-1][1] >= instruction["depth"]:
         branch_stack.pop()
     spec_of = ", ".join(str(idx + 1) for idx, _ in branch_stack)
-    if instruction["type"].startswith("BR"):
-        branch_stack.append((instructions.index(instruction), instruction["depth"]))
+    branch_stack.append((instructions.index(instruction), instruction["depth"]))
     lat_fu = ", ".join(map(str, instruction['lats']))
     data_deps = {idx for dep in instruction["deps"] if dep for idx, instr in enumerate(instructions, start=1) if instr["label"] == dep}
     data_deps = data_deps if data_deps else {}

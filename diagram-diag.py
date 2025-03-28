@@ -58,7 +58,7 @@ for label in labels:
             for idx in idx_matches:
                 table[(int(idx), clock_cycle)] = 'ID'
         if 'StageRS' in line:
-            idx_pattern = re.compile(r'\d+')
+            idx_pattern = re.compile(r'\{(\d+(?:,\d+)*)\}')
             idx_matches = idx_pattern.findall(line)
             for idx in idx_matches:
                 table[(int(idx), clock_cycle)] = 'rs'
