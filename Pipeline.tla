@@ -37,6 +37,7 @@ TypeOK ==
         type: InstrTypes, 
         data_deps: SUBSET Positive, 
         spec_of: SUBSET Positive, 
+        br_pred: SUBSET BOOLEAN,
         LatIF: SUBSET Positive, 
         LatFU: SUBSET Positive
         ])
@@ -198,8 +199,9 @@ AllBranches ==
     THEN 
         CartProd(
             [i ∈ 1..Len(prog) |-> 
-            IF i ∈ BranchInstr /\ i ∈ {entry.idx : entry ∈ AllInSeq(StageIF)} 
-            THEN {TRUE, FALSE} ELSE {FALSE}])
+            IF i ∈ BranchInstr /\ i ∈ {entry.idx : entry ∈ AllInSeq(StageIF)}
+            THEN (IF prog[i].br_pred = {} THEN {TRUE, FALSE} ELSE prog[i].br_pred)
+            ELSE {FALSE}])
     ELSE {[i ∈ 1..Len(prog) |-> FALSE]}
 
 NextSquashed ==
