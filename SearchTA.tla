@@ -15,16 +15,10 @@ VARIABLE Commited_2
 VARIABLE PC_2
 VARIABLE ClockCycle_2
 
-
-Prog1 == ⟨
-[idx |-> 1,     type |-> "FU1",    data_deps |-> {},    spec_of |-> {},  br_pred |-> {},       LatIF |-> {1},  LatFU |-> {4}]
-⟩
-
-Prog2 == ⟨
-[idx |-> 1,     type |-> "FU1",    data_deps |-> {},    spec_of |-> {},  br_pred |-> {},       LatIF |-> {1},  LatFU |-> {5}]
-⟩
+VARIABLES Prog1, Prog2
 
 Pipe1 == INSTANCE Pipeline WITH 
+    prog_const <- ⟨⟩,
     prog <- Prog1,
     superscalar <- 1,
     BranchDivergence <- FALSE,
@@ -41,6 +35,7 @@ Pipe1 == INSTANCE Pipeline WITH
     ClockCycle <- ClockCycle_1
 
 Pipe2 == INSTANCE Pipeline WITH 
+    prog_const <- ⟨⟩,
     prog <- Prog2,
     superscalar <- 1,
     BranchDivergence <- FALSE,
@@ -56,10 +51,32 @@ Pipe2 == INSTANCE Pipeline WITH
     PC <- PC_2,
     ClockCycle <- ClockCycle_2
 
+ProgLen == 7
+SpecLen == 2
+BasicLat == 4
+
+ChooseProg ==
+    ∃ types ∈ CartProd([i ∈ 1..ProgLen |-> {"FU1", "FU2"}]) :
+    ∃ spec_start ∈ 1..(ProgLen - SpecLen) :
+    Prog1 = 
+        [i ∈ 1..ProgLen |-> [
+            idx |-> i,
+            type |-> types[i],
+            data_deps |-> {},
+            spec_of |-> IF i > spec_start /\ i <= spec_start + SpecLen THEN {spec_start} ELSE {},
+            br_pred |-> {FALSE},
+            LatIF |-> {1},  
+            LatFU |-> {BasicLat}
+        ]]
+
+AlterProg ==
+    Prog2 = [i ∈ 1..ProgLen |-> [Prog1[i] EXCEPT !.br_pred = TRUE]]
 
 Init ==
-    /\ Pipe1!Init
-    /\ Pipe2!Init
+    /\ ChooseProg
+    /\ AlterProg
+    /\ Pipe1!PartialInit
+    /\ Pipe2!PartialInit
 
 Next ==
     /\ Pipe1!Next

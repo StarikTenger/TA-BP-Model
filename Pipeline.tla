@@ -1,8 +1,11 @@
 ---- MODULE Pipeline ----
 EXTENDS TLC, Sequences, Integers, Util, FiniteSets
 
-CONSTANT prog, superscalar
+CONSTANT prog_const
+CONSTANT superscalar
 CONSTANT BranchDivergence
+
+VARIABLE prog
 
 VARIABLES StageIF, StageID, StageRS, StageFU, StageCOM
 
@@ -245,7 +248,7 @@ NextClockCycle ==
 NextCommited ==
     Commited' = Commited ∪ AllInSeq(StageCOM)
 
-Init == 
+PartialInit == 
     /\ PC = 0
     /\ StageIF = [s ∈ 1..superscalar |-> {}]
     /\ StageID = [s ∈ 1..superscalar |-> {}]
@@ -257,6 +260,10 @@ Init ==
     /\ Squashed = {}
     /\ Commited = {}
     /\ ClockCycle = 0
+
+Init ==
+    /\ prog = prog_const
+    /\ PartialInit
     
 Next == 
     /\ NextSquashed
@@ -272,6 +279,7 @@ Next ==
     /\ NextReady
     /\ NextClockCycle
     /\ NextCommited
+    /\ UNCHANGED ⟨prog⟩
 
 TimeExceed(t) ==
     ExecutionFinished /\ ClockCycle > t
