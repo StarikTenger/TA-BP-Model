@@ -37,18 +37,21 @@ elif file_format == 'txt':
                 match = label_pattern.match(line.strip())
                 if match:
                     key, value = match.groups()
-                    current_label.append(f"{key} |-> {value}")
+                    current_label.append(f"{key} = {value}")
         if current_label:
             labels.append('\\n'.join(current_label))
 
 tables = [{},{}]
+
+progs = ['', '']
 
 clock_cycle = 0
 for label in labels:
     lines = label.split('\\n')
     for line in lines:
         for i in range(2):
-            if 'Prog1' in line or 'Prog2' in line:
+            if 'Prog' + str(i + 1) in line:
+                progs[i] = line.split('=')[1].strip()
                 continue
             if 'StageIF_' + str(i + 1) in line:
                 idx_pattern = re.compile(r'idx\s*\|->\s*(\d+)')
@@ -71,7 +74,7 @@ for label in labels:
                 for fu, idx in idx_matches:
                     tables[i][(int(idx), clock_cycle)] = fu
             if 'ROB_' + str(i + 1) in line:
-                idx_pattern = re.compile(r'(\{|, )(\d+)')
+                idx_pattern = re.compile(r'(\<<|, )(\d+)')
                 idx_matches = idx_pattern.findall(line)
                 for _, idx in idx_matches:
                     if (int(idx), clock_cycle) not in tables[i]:
@@ -106,6 +109,22 @@ def print_table(table):
         print(row)
     print('----' + '----' * max_cycle)
 
+def print_deps(prog):
+    prog_pattern = re.compile(r'<<\[(.*?)\]>>')
+    match = prog_pattern.search(prog)
+    if match:
+        dep_pattern = re.compile(r'idx\s*\|->\s*(\d+).*?data_deps\s*\|->\s*\{(.*?)\}')
+        dep_matches = dep_pattern.findall(prog)
+        for idx, deps in dep_matches:
+            if deps.strip():
+                for dep in deps.split(','):
+                    print(f"{dep.strip()} -> {idx}")
+    else:
+        print("No valid program format found.")
+
 # Print the tables for both programs
 print_table(tables[0])
 print_table(tables[1])
+
+# Print the dependencies for both programs
+print_deps(progs[0])
