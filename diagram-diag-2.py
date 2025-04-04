@@ -8,6 +8,8 @@ file_format = input_file.split('.')[-1]
 labels = []
 current_labels = []
 
+trace_limit = 10
+
 with open(input_file, 'r') as file:
     lines = file.readlines()
 
@@ -16,7 +18,7 @@ with open(input_file, 'r') as file:
 
     cur_state = []
     for line in lines:
-        if "Error: Invariant NoTA is violated." in line:
+        if "Error: Invariant" in line:
             if current_labels:
                 labels.append(current_labels)
                 current_labels = []
@@ -29,6 +31,10 @@ with open(input_file, 'r') as file:
             if match:
                 key, value = match.groups()
                 cur_state.append(f"{key} = {value}")
+
+        if len(labels) >= trace_limit:
+            break
+
     if current_labels:
         labels.append(current_labels)
 
@@ -120,7 +126,7 @@ def print_trace_pair(labels):
     # Print the dependencies for both programs
     print_deps(progs[0])
 
-for i in range(1, len(labels)):
+for i in range(0, len(labels)):
     print()
     print("====" * 10 + f" Trace {i} " +  "====" * 10)
     print()
