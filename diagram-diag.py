@@ -11,7 +11,7 @@ if file_format == 'dot':
     with open(input_file, 'r') as file:
         lines = file.readlines()
 
-    label_pattern = re.compile(r'label\s*=\s*"(.*?)"')
+    label_pattern = re.compile(r'label\s*=\s*"(.*?)(?<!\\)"')
 
     for line in lines:
         match = label_pattern.search(line)
