@@ -198,14 +198,11 @@ NextCOM ==
 SquashedBy(idx) == {i ∈ 1..Len(prog) : idx ∈ prog[i].spec_of}
 
 AllBranches == 
-    IF BranchDivergence
-    THEN 
-        CartProd(
-            [i ∈ 1..Len(prog) |-> 
-            IF i ∈ BranchInstr /\ i ∈ {entry.idx : entry ∈ AllInSeq(StageIF)}
-            THEN (IF prog[i].br_pred = {} THEN {TRUE, FALSE} ELSE prog[i].br_pred)
-            ELSE {FALSE}])
-    ELSE {[i ∈ 1..Len(prog) |-> FALSE]}
+    CartProd(
+        [i ∈ 1..Len(prog) |-> 
+        IF i ∈ BranchInstr /\ i ∈ {entry.idx : entry ∈ AllInSeq(StageIF)}
+        THEN (IF prog[i].br_pred = {} THEN (IF BranchDivergence THEN {TRUE, FALSE} ELSE {FALSE}) ELSE prog[i].br_pred)
+        ELSE {FALSE}])
 
 NextSquashed ==
     ∃ branch_decision ∈ AllBranches :
