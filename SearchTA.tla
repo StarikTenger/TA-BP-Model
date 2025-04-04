@@ -1,5 +1,5 @@
 ---- MODULE SearchTA ----
-EXTENDS TLC, Sequences, Integers, Util, FiniteSets
+EXTENDS TLC, Sequences, Integers, Util, FiniteSets, FiniteSetsExt, SequencesExt
 
 VARIABLES StageIF_1, StageID_1, StageRS_1, StageFU_1, StageCOM_1
 VARIABLE ROB_1, Ready_1
@@ -51,26 +51,73 @@ Pipe2 == INSTANCE Pipeline WITH
     PC <- PC_2,
     ClockCycle <- ClockCycle_2
 
-ProgLen == 7
-SpecLen == 2
+TypeOK_1 == Pipe1!TypeOK
+TypeOK_2 == Pipe2!TypeOK
+
+\* TODO: find a better way to catch stalled forever pipe
+CCBound_1 == ClockCycle_1 <= 70
+CCBound_2 == ClockCycle_2 <= 70
+
+BeforeSpec == 2
+SpecLen == 10
+AfterSpec == 3
+
+ProgLen == BeforeSpec + SpecLen + AfterSpec
+
 BasicLat == 4
+DepNumber == 2
+
+\* 3 instr
+\* 10 spec, all same
+\* 2 more instr
 
 ChooseProg ==
-    ∃ types ∈ CartProd([i ∈ 1..ProgLen |-> {"FU1", "FU2"}]) :
-    ∃ spec_start ∈ 1..(ProgLen - SpecLen) :
+    ∃ lat_FU1 ∈ {4,5,6,7} :
+    ∃ lat_FU2 ∈ {4,5,6,7} :
+    ∃ types ∈ CartProd([i ∈ 1..BeforeSpec + AfterSpec |-> {"FU1", "FU2"}]) :
+    ∃ lats ∈ CartProd([i ∈ 1..BeforeSpec + AfterSpec |-> {
+        IF types[i] = "FU1" THEN lat_FU1 ELSE lat_FU2
+    }]) :
+    ∃ dep_set ∈ kSubset(DepNumber * 2, 1..BeforeSpec ∪ (BeforeSpec + SpecLen + 1)..ProgLen) :
+    LET dep_seq == SetToSeq(dep_set) IN
     Prog1 = 
-        [i ∈ 1..ProgLen |-> [
+        [
+            [i ∈ 1..BeforeSpec |-> [
             idx |-> i,
             type |-> types[i],
             data_deps |-> {},
-            spec_of |-> IF i > spec_start /\ i <= spec_start + SpecLen THEN {spec_start} ELSE {},
+            spec_of |-> {},
+            br_pred |-> {},
+            LatIF |-> {1},  
+            LatFU |-> {lats[i]}]] ∘
+
+            [i ∈ 1..SpecLen |-> [
+            idx |-> BeforeSpec + i,
+            type |-> "FU1",
+            data_deps |-> {},
+            spec_of |-> {BeforeSpec},
             br_pred |-> {FALSE},
             LatIF |-> {1},  
-            LatFU |-> {BasicLat}
-        ]]
+            LatFU |-> {BasicLat}]] ∘
+
+            [i ∈ 1..AfterSpec |-> [
+            idx |-> BeforeSpec + SpecLen + i,
+            type |-> types[BeforeSpec + i],
+            data_deps |-> {},
+            spec_of |-> {},
+            br_pred |-> {},
+            LatIF |-> {1},  
+            LatFU |-> {lats[BeforeSpec + i]}]]
+
+        EXCEPT \* TODO ! HARDCODE !
+            ![dep_seq[2]].data_deps = {dep_seq[1]},
+            ![dep_seq[4]].data_deps = {dep_seq[3]}
+        ]
 
 AlterProg ==
-    Prog2 = [i ∈ 1..ProgLen |-> [Prog1[i] EXCEPT !.br_pred = TRUE]]
+    Prog2 = [i ∈ 1..ProgLen |-> [Prog1[i] EXCEPT !.br_pred = {TRUE}]]
+    \* ∃ i ∈ 1..ProgLen :
+    \* Prog2 = [Prog1 EXCEPT ![i].LatFU = {1}]
 
 Init ==
     /\ ChooseProg
