@@ -95,7 +95,7 @@ header = "" + "".join(f"\t{cycle}" for cycle in range(1, max_cycle + 1))
 print(header)
 
 # Print each row
-for idx in range(1, max_idx + 1):
+for idx in range(0, max_idx + 1):
     row = f"{idx}"
     for cycle in range(1, max_cycle + 1):
         row += f"\t{table.get((idx, cycle), '')}"
