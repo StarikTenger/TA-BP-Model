@@ -58,8 +58,8 @@ TypeOK_2 == Pipe2!TypeOK
 CCBound_1 == ClockCycle_1 <= 70
 CCBound_2 == ClockCycle_2 <= 70
 
-BeforeSpec == 2
-SpecLen == 10
+BeforeSpec == 3
+SpecLen == 20
 AfterSpec == 3
 
 ProgLen == BeforeSpec + SpecLen + AfterSpec
@@ -72,15 +72,21 @@ DepNumber == 2
 \* 2 more instr
 
 ChooseProg ==
-    ∃ lat_FU1 ∈ {4,5,6,7} :
-    ∃ lat_FU2 ∈ {4,5,6,7} :
+    ∃ lat_FU1 ∈ {4} :
+    ∃ lat_FU2 ∈ {7} :
     ∃ types ∈ CartProd([i ∈ 1..BeforeSpec + AfterSpec |-> {"FU1", "FU2"}]) :
     ∃ lats ∈ CartProd([i ∈ 1..BeforeSpec + AfterSpec |-> {
         IF types[i] = "FU1" THEN lat_FU1 ELSE lat_FU2
     }]) :
-    ∃ dep_set ∈ kSubset(DepNumber * 2, 1..BeforeSpec ∪ (BeforeSpec + SpecLen + 1)..ProgLen) :
-    LET dep_seq == SetToSeq(dep_set) IN
-    Prog1 = 
+    LET map_to_nonspec(i) == IF i <= BeforeSpec THEN i ELSE i + SpecLen IN
+    ∃ dep1_from ∈ 1..(BeforeSpec + AfterSpec - 1) :
+    ∃ dep1_to ∈ (dep1_from + 1)..(BeforeSpec + AfterSpec) :
+    ∃ dep2_from ∈ 1..(BeforeSpec + AfterSpec - 1) :
+    ∃ dep2_to ∈ (dep2_from + 1)..(BeforeSpec + AfterSpec) :
+    /\ dep1_from <= dep2_from
+    /\ dep1_from /= BeforeSpec
+    /\ dep2_from /= BeforeSpec
+    /\ Prog1 = 
         [
             [i ∈ 1..BeforeSpec |-> [
             idx |-> i,
@@ -110,8 +116,10 @@ ChooseProg ==
             LatFU |-> {lats[BeforeSpec + i]}]]
 
         EXCEPT \* TODO ! HARDCODE !
-            ![dep_seq[2]].data_deps = {dep_seq[1]},
-            ![dep_seq[4]].data_deps = {dep_seq[3]}
+            ![map_to_nonspec(dep1_to)].data_deps = {map_to_nonspec(dep1_from)},
+            ![map_to_nonspec(dep2_to)].data_deps = {map_to_nonspec(dep2_from)},
+            ![BeforeSpec].type = "FU1",
+            ![BeforeSpec].LatFU = {1}
         ]
 
 AlterProg ==
