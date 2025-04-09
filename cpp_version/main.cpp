@@ -30,6 +30,7 @@ struct PipelineState
     deque<int> ROB = deque<int>();
     int completed = -1; // The highest index of the instruction that has been completed
     set<int> executed; // Instructions that have been executed
+    set<int> squashed; // Instructions that have been squashed
 
     PipelineState() {
         for (auto& entry : stage_IF) {
@@ -173,7 +174,7 @@ struct Instr
     int fu_type = 0;
     int lat_fu = 1;
     set<int> data_deps;
-    set<int> spec_of;
+    int mispred_region = 0;
     bool br_pred = false;
 };
 
@@ -193,6 +194,11 @@ bool next_state(PipelineState& state, vector<Instr> prog)
             state.stage_FU[i].cycles_left--;
         }
         if (state.stage_FU[i].cycles_left == 0 && state.stage_FU[i].idx != -1) {
+            // Squash next instrucions
+            for (int j = 0; j < prog[state.stage_FU[i].idx].mispred_region; j++) {
+                state.squashed.insert(state.stage_FU[i].idx + 1 + j);
+            }
+
             state.executed.insert(state.stage_FU[i].idx);
             state.stage_FU[i].idx = -1;
         }
@@ -200,11 +206,45 @@ bool next_state(PipelineState& state, vector<Instr> prog)
 
     // From ROB to commit stage
     for (int i = 0; i < SUPERSCALAR; i++) {
+        while (!state.ROB.empty() && state.squashed.contains(state.ROB.front())) {
+            state.ROB.pop_front();
+        }
+
         if (!state.ROB.empty() && state.executed.contains(state.ROB.front())) {
             int rob_entry = state.ROB.front();
             state.ROB.pop_front();
             state.stage_COM[i] = rob_entry;
         }
+    }
+
+    // Squash instructions in the pipeline
+    for (int i = 0; i < SUPERSCALAR; i++) {
+        if (state.stage_ID[i] != -1 && state.squashed.contains(state.stage_ID[i])) {
+            state.stage_ID[i] = -1;
+        }
+    }
+    for (int i = 0; i < FU_NUM; i++) {
+        if (state.stage_FU[i].idx != -1 && state.squashed.contains(state.stage_FU[i].idx)) {
+            state.stage_FU[i].idx = -1;
+        }
+    }
+    for (int i = 0; i < SUPERSCALAR; i++) {
+        if (state.stage_IF[i].idx != -1 && state.squashed.contains(state.stage_IF[i].idx)) {
+            state.stage_IF[i].idx = -1;
+        }
+    }
+    for (int i = 0; i < FU_NUM; i++) {
+        for (auto it = state.stage_RS[i].begin(); it != state.stage_RS[i].end();) {
+            if (state.squashed.contains(*it)) {
+                it = state.stage_RS[i].erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    // Move PC to the next non-squashed instruction
+    while (state.pc < prog.size() && state.squashed.contains(state.pc)) {
+        state.pc++;
     }
 
     // From rs to FU stage
@@ -295,6 +335,7 @@ vector<Instr> read_program(const string& filename)
     if (file.is_open()) {
         string line;
         map<string, int> label_map;
+        vector<int> indentations;
 
         while (getline(file, line)) {
             if (line.empty()) continue;
@@ -302,13 +343,25 @@ vector<Instr> read_program(const string& filename)
             Instr instr;
             size_t pos = 0;
 
+            // Determine indentation level
+            int indentation = 0;
+            while (pos < line.size() && isspace(line[pos])) {
+                if (line[pos] == '\t') {
+                    indentation += 4; // Assuming a tab is 4 spaces
+                } else {
+                    indentation++;
+                }
+                pos++;
+            }
+            indentations.push_back(indentation);
+
             // Tokenize the line using stringstream and operator >>
             vector<string> tokens;
-            stringstream ss(line);
+            stringstream ss(line.substr(pos)); // Skip leading spaces
             string token;
             while (ss >> token) {
                 tokens.push_back(token);
-            }    
+            }
 
             // Parse tokens
             for (const auto& token : tokens) {
@@ -325,6 +378,20 @@ vector<Instr> read_program(const string& filename)
 
             prog.push_back(instr);
         }
+
+        // Calculate mispred_region based on indentation
+        for (size_t i = 0; i < prog.size(); ++i) {
+            int current_indent = indentations[i];
+            int mispred_region = 0;
+            for (size_t j = i + 1; j < prog.size(); ++j) {
+                if (indentations[j] > current_indent) {
+                    mispred_region++;
+                } else {
+                    break;
+                }
+            }
+            prog[i].mispred_region = mispred_region;
+        }
     } else {
         cerr << "Unable to open file";
     }
@@ -340,7 +407,8 @@ void print_program(const vector<Instr>& prog)
         for (const auto& dep : prog[i].data_deps) {
             cerr << dep << " ";
         }
-        cerr << "}\n";
+        cerr << "}, \tMisprediction Region: " << prog[i].mispred_region;
+        cerr << "\n";
     }
 }
 
