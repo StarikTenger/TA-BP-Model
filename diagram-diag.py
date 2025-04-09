@@ -20,7 +20,7 @@ if file_format == 'dot':
             if label:
                 labels.append(label)
 
-elif file_format == 'txt':
+else:
     with open(input_file, 'r') as file:
         lines = file.readlines()
 

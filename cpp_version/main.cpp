@@ -2,7 +2,10 @@
 #include <vector>
 #include <algorithm>
 #include <set>
+#include <map>
 #include <deque>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -225,7 +228,7 @@ bool next_state(PipelineState& state, vector<Instr> prog)
                 }
             }
 
-            if (found) break;
+            if (found) continue;
 
             for (int s = 0; s < SUPERSCALAR; s++) {
                 int id_entry = state.stage_ID[s];
@@ -285,17 +288,76 @@ bool next_state(PipelineState& state, vector<Instr> prog)
 
 }
 
+vector<Instr> read_program(const string& filename) 
+{
+    ifstream file(filename);
+    vector<Instr> prog;
+    if (file.is_open()) {
+        string line;
+        map<string, int> label_map;
+
+        while (getline(file, line)) {
+            if (line.empty()) continue;
+
+            Instr instr;
+            size_t pos = 0;
+
+            // Tokenize the line using stringstream and operator >>
+            vector<string> tokens;
+            stringstream ss(line);
+            string token;
+            while (ss >> token) {
+                tokens.push_back(token);
+            }    
+
+            // Parse tokens
+            for (const auto& token : tokens) {
+                if (token.substr(0, 2) == "FU") {
+                    instr.fu_type = stoi(token.substr(2)) - 1;
+                } else if (token[0] == '@') {
+                    instr.data_deps.insert(label_map[token.substr(1)]);
+                } else if (token[0] == '[' && token.back() == ']') {
+                    instr.lat_fu = stoi(token.substr(1, token.size() - 2));
+                } else if (token[0] == '#') {
+                    label_map[token.substr(1)] = prog.size();
+                }
+            }
+
+            prog.push_back(instr);
+        }
+    } else {
+        cerr << "Unable to open file";
+    }
+    return prog;
+}
+
+void print_program(const vector<Instr>& prog) 
+{
+    for (size_t i = 0; i < prog.size(); ++i) {
+        cerr << i << ": ";
+        cerr << "FU" << prog[i].fu_type + 1 << ", Lat = " << prog[i].lat_fu;
+        cerr << ", Data Dependencies: {";
+        for (const auto& dep : prog[i].data_deps) {
+            cerr << dep << " ";
+        }
+        cerr << "}\n";
+    }
+}
 
 int main(int argc, char *argv[]) 
 {
-    vector<Instr> prog = {
-        {0, 1, {}, {}, false},
-        {1, 2, {0}, {}, false},
-        {0, 1, {}, {}, false},
-        {1, 2, {2}, {}, false},
-        {0, 1, {}, {}, false},
-        {1, 2, {4}, {}, false}
-    };
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " <program_file>" << endl;
+        return 1;
+    }
+    string filename = argv[1];
+    vector<Instr> prog = read_program(filename);
+    if (prog.empty()) {
+        cerr << "No instructions found in the program file." << endl;
+        return 1;
+    }
+
+    print_program(prog);
 
     PipelineState state;
     state.clock_cycle = 0;
