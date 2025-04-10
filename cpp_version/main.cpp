@@ -46,71 +46,75 @@ struct PipelineState
         fill(stage_COM.begin(), stage_COM.end(), -1);
     } 
 
-    void formatted_print() {
-        cout << "/\\ Ready = {";
+    string formatted_string() {
+        stringstream ss;
+        ss << "/\\ Ready = {";
         for (const auto& exec : executed) {
-            cout << exec << " ";
+            ss << exec << " ";
         }
-        cout << "}\n";
+        ss << "}\n";
 
-        cout << "/\\ Squashed = {}\n"; // Placeholder for squashed instructions if needed
+        ss << "/\\ Squashed = {}\n"; // Placeholder for squashed instructions if needed
 
-        cout << "/\\ StageRS = [";
-        for (size_t i = 0; i < stage_RS.size(); ++i) {
-            cout << "FU" << (i + 1) << " |-> {";
-            for (const auto& elem : stage_RS[i]) {
-            cout << elem << " ";
-            }
-            cout << "}";
-            if (i < stage_RS.size() - 1) cout << ", ";
-        }
-        cout << "]\n";
-
-        cout << "/\\ StageFU = [";
-        for (size_t i = 0; i < stage_FU.size(); ++i) {
-            cout << "FU" << (i + 1) << " |-> ";
-            if (stage_FU[i].idx != -1) {
-            cout << "{[idx |-> " << stage_FU[i].idx << ", cycles_left |-> " << stage_FU[i].cycles_left << "]}";
-            } else {
-            cout << "{}";
-            }
-            if (i < stage_FU.size() - 1) cout << ", ";
-        }
-        cout << "]\n";
-
-        cout << "/\\ ROB = <<";
-        for (const auto& rob_entry : ROB) {
-            cout << rob_entry << " ";
-        }
-        cout << ">>\n";
-
-        cout << "/\\ StageID = <<";
-        for (const auto& id : stage_ID) {
-            if (id != -1) {
-            cout << "{" << id << "} ";
-            }
-        }
-        cout << ">>\n";
-
-        cout << "/\\ StageIF = <<";
+        ss << "/\\ StageIF = <<";
         for (const auto& entry : stage_IF) {
             if (entry.idx != -1) {
-            cout << "{[idx |-> " << entry.idx << ", cycles_left |-> " << entry.cycles_left << "]} ";
+            ss << "{[idx |-> " << entry.idx << ", cycles_left |-> " << entry.cycles_left << "]} ";
             }
         }
-        cout << ">>\n";
+        ss << ">>\n";
 
-        cout << "/\\ StageCOM = <<";
+        ss << "/\\ StageID = <<";
+        for (const auto& id : stage_ID) {
+            if (id != -1) {
+            ss << "{" << id << "} ";
+            }
+        }
+        ss << ">>\n";
+
+        ss << "/\\ StageRS = [";
+        for (size_t i = 0; i < stage_RS.size(); ++i) {
+            ss << "FU" << (i + 1) << " |-> {";
+            for (const auto& elem : stage_RS[i]) {
+            ss << elem << " ";
+            }
+            ss << "}";
+            if (i < stage_RS.size() - 1) ss << ", ";
+        }
+        ss << "]\n";
+
+        ss << "/\\ StageFU = [";
+        for (size_t i = 0; i < stage_FU.size(); ++i) {
+            ss << "FU" << (i + 1) << " |-> ";
+            if (stage_FU[i].idx != -1) {
+            ss << "{[idx |-> " << stage_FU[i].idx << ", cycles_left |-> " << stage_FU[i].cycles_left << "]}";
+            } else {
+            ss << "{}";
+            }
+            if (i < stage_FU.size() - 1) ss << ", ";
+        }
+        ss << "]\n";
+
+        ss << "/\\ ROB = <<";
+        for (const auto& rob_entry : ROB) {
+            ss << rob_entry << " ";
+        }
+        ss << ">>\n";
+        
+
+        ss << "/\\ StageCOM = <<";
         for (const auto& com : stage_COM) {
             if (com != -1) {
-            cout << "{" << com << "} ";
+            ss << "{" << com << "} ";
             }
         }
-        cout << ">>\n";
+        ss << ">>\n";
 
-        cout << "/\\ ClockCycle = " << clock_cycle << "\n";
-        cout << "/\\ PC = " << pc << "\n";
-        cout << "/\\ Commited = {" << completed << "}\n";
+        ss << "/\\ ClockCycle = " << clock_cycle << "\n";
+        ss << "/\\ PC = " << pc << "\n";
+        ss << "/\\ Commited = {" << completed << "}\n";
+
+        return ss.str();
     }
 
     friend ostream& operator<<(ostream& os, const PipelineState& state) {
@@ -331,6 +335,8 @@ bool next_state(PipelineState& state, vector<Instr> prog)
         }
     }
 
+    state.clock_cycle++;
+
     return state.completed >= (int)prog.size() - 1;
 
 }
@@ -419,7 +425,55 @@ void print_program(const vector<Instr>& prog)
     }
 }
 
+bool has_TA(vector<Instr>& prog)
+{
+    PipelineState state;
+    state.clock_cycle = 0;
+    state.pc = 0;
 
+    for (int i = 0; !next_state(state, prog) && i < 100; i++) {}
+
+    int time1 = state.clock_cycle;
+
+    state = PipelineState();
+    state.clock_cycle = 0;
+    state.pc = 0;
+
+    for (auto& instr : prog) {
+        instr.br_pred = true;
+    }
+
+    for (int i = 0; !next_state(state, prog) && i < 100; i++) {}
+
+    int time2 = state.clock_cycle;
+
+    cout << time1 << " " << time2 << endl;
+
+    return time1 < time2;
+}
+
+string dump_trace(const vector<Instr>& prog) 
+{
+    stringstream trace;
+
+    PipelineState state;
+    state.clock_cycle = 0;
+    state.pc = 0;
+
+    for (int i = 0; i < 100; i++) {
+        trace << "State " << state.clock_cycle << ":\n";
+        trace << state.formatted_string();
+        trace << "\n";
+
+        if (next_state(state, prog)) {
+            break;
+        }
+        
+        state.clock_cycle++;
+    }
+
+    return trace.str();
+}
 
 int main(int argc, char *argv[]) 
 {
@@ -440,24 +494,39 @@ int main(int argc, char *argv[])
     state.clock_cycle = 0;
     state.pc = 0;
 
-    for (auto& instr : prog) {
-        instr.br_pred = true;
+    bool ta = has_TA(prog);
+
+    if (ta) {
+        cerr << "The program has a timing anomaly." << endl;
+    } else {
+        cerr << "The program does not have a timing anomaly." << endl;
     }
-
-    for (int i = 0; i < 100; i++) {
-        // cout << " ======== Clock Cycle: " << state.clock_cycle << " ========\n";
-        // cout << state;
-        cout << "State " << state.clock_cycle << ":\n";
-        state.formatted_print();
-        cout << "\n";
-
-        if (next_state(state, prog)) {
-            break;
-        }
-        
-        state.clock_cycle++;
-    }
-
     
+    {
+        ofstream outfile("out1.tmp");
+        if (outfile.is_open()) {
+            outfile << dump_trace(prog);
+            outfile.close();
+            cerr << "Trace dumped to out1.tmp" << endl;
+        } else {
+            cerr << "Failed to open file for writing trace." << endl;
+        }
+    }
+
+    for (auto& instr : prog) {
+        instr.br_pred = false;
+    }
+
+    {
+        ofstream outfile("out2.tmp");
+        if (outfile.is_open()) {
+            outfile << dump_trace(prog);
+            outfile.close();
+            cerr << "Trace dumped to out2.tmp" << endl;
+        } else {
+            cerr << "Failed to open file for writing trace." << endl;
+        }
+    }
+
     return 0;
 }
