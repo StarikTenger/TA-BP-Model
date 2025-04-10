@@ -6,6 +6,7 @@
 #include <deque>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
 
 using namespace std;
 
@@ -413,14 +414,44 @@ vector<Instr> read_program(const string& filename)
 
 void print_program(const vector<Instr>& prog) 
 {
+    vector<int> mispred_stack;
+
     for (size_t i = 0; i < prog.size(); ++i) {
-        cerr << i << ": ";
-        cerr << "FU" << prog[i].fu_type + 1 << ", Lat = " << prog[i].lat_fu;
-        cerr << ", Data Dependencies: {";
-        for (const auto& dep : prog[i].data_deps) {
-            cerr << dep << " ";
+        // Print indentation based on the size of the stack
+        for (size_t j = 0; j < mispred_stack.size(); ++j) {
+            cerr << "    ";
         }
-        cerr << "}, \tMisprediction Region: " << prog[i].mispred_region;
+
+        // Update the misprediction stack
+        while (!mispred_stack.empty() && mispred_stack.back() == 0) {
+            mispred_stack.pop_back();
+        }
+
+        if (prog[i].mispred_region != 0) {
+            mispred_stack.push_back(prog[i].mispred_region);
+        }
+
+        // Decrease the top of the stack for the current instruction
+        if (!mispred_stack.empty()) {
+            mispred_stack.back()--;
+        }
+
+        
+
+        // Print functional unit type
+        cerr << "FU" << prog[i].fu_type + 1;
+
+        // Print label if present
+        cerr << " #" << i + 1 << " ";
+
+        // Print data dependencies
+        for (const auto& dep : prog[i].data_deps) {
+            cerr << "@" << dep + 1 << " ";
+        }
+
+        // Print latency
+        cerr << "[" << prog[i].lat_fu << "]";
+
         cerr << "\n";
     }
 }
@@ -446,8 +477,6 @@ bool has_TA(vector<Instr>& prog)
     for (int i = 0; !next_state(state, prog) && i < 100; i++) {}
 
     int time2 = state.clock_cycle;
-
-    cout << time1 << " " << time2 << endl;
 
     return time1 < time2;
 }
@@ -475,58 +504,160 @@ string dump_trace(const vector<Instr>& prog)
     return trace.str();
 }
 
+int random_int(int min, int max) {
+    return rand() % (max - min + 1) + min;
+}
+
+vector<Instr> random_program(int size) {
+    vector<int> fu_lats = {4, 7};
+
+    int before_spec = random_int(1, size - 1);
+    int after_spec = size - before_spec;
+    int spec = 20;
+
+    vector<Instr> prog;
+
+    for (int i = 0; i < before_spec; i++) {
+        Instr instr;
+        instr.fu_type = random_int(0, FU_NUM - 1);
+        instr.lat_fu = fu_lats[instr.fu_type];
+        instr.mispred_region = 0;
+
+        prog.push_back(instr);
+    }
+    prog[before_spec - 1].lat_fu = 1;
+    prog[before_spec - 1].mispred_region = spec;
+
+    for (int i = 0; i < spec; i++) {
+        Instr instr;
+        instr.fu_type = random_int(0, FU_NUM - 1);
+        instr.lat_fu = fu_lats[instr.fu_type];
+        instr.mispred_region = 0;
+
+        prog.push_back(instr);
+    }
+
+    for (int i = 0; i < after_spec; i++) {
+        Instr instr;
+        instr.fu_type = random_int(0, FU_NUM - 1);
+        instr.lat_fu = fu_lats[instr.fu_type];
+        instr.mispred_region = 0;
+
+        prog.push_back(instr);
+    }
+
+    int deps = 2;
+    for (int i = 0; i < deps; i++) {
+        int from = random_int(0, prog.size() - 2);
+        int to = random_int(from + 1, prog.size() - 1);
+        if (from < before_spec || from >= before_spec + spec) {
+            prog[to].data_deps.insert(from);
+        }
+    }
+
+    return prog;
+}
+
+void random_search_TA() {
+    int iterations = 10000000;
+    int size = 3;
+    for (int i = 0; i < iterations; i++) {
+        vector<Instr> prog = random_program(size);
+        PipelineState state;
+        
+        if (has_TA(prog)) {
+            cerr << "Found a timing anomaly" << endl;
+            print_program(prog);
+
+            {
+                ofstream outfile("out1.tmp");
+                if (outfile.is_open()) {
+                    outfile << dump_trace(prog);
+                    outfile.close();
+                    cerr << "Trace dumped to out1.tmp" << endl;
+                } else {
+                    cerr << "Failed to open file for writing trace." << endl;
+                }
+            }
+
+            for (auto& instr : prog) {
+                instr.br_pred = false;
+            }
+
+            {
+                ofstream outfile("out2.tmp");
+                if (outfile.is_open()) {
+                    outfile << dump_trace(prog);
+                    outfile.close();
+                    cerr << "Trace dumped to out2.tmp" << endl;
+                } else {
+                    cerr << "Failed to open file for writing trace." << endl;
+                }
+            }
+
+            break;
+        }
+
+        if (i % 100000 == 0) {
+            cerr << "Iteration: " << i << ", No timing anomaly found" << endl;
+        }
+    }
+}
+
 int main(int argc, char *argv[]) 
 {
-    if (argc < 2) {
-        cerr << "Usage: " << argv[0] << " <program_file>" << endl;
-        return 1;
-    }
-    string filename = argv[1];
-    vector<Instr> prog = read_program(filename);
-    if (prog.empty()) {
-        cerr << "No instructions found in the program file." << endl;
-        return 1;
-    }
+    // if (argc < 2) {
+    //     cerr << "Usage: " << argv[0] << " <program_file>" << endl;
+    //     return 1;
+    // }
+    // string filename = argv[1];
+    // vector<Instr> prog = read_program(filename);
+    // if (prog.empty()) {
+    //     cerr << "No instructions found in the program file." << endl;
+    //     return 1;
+    // }
 
-    print_program(prog);
+    // print_program(prog);
 
-    PipelineState state;
-    state.clock_cycle = 0;
-    state.pc = 0;
+    // PipelineState state;
+    // state.clock_cycle = 0;
+    // state.pc = 0;
 
-    bool ta = has_TA(prog);
+    // bool ta = has_TA(prog);
 
-    if (ta) {
-        cerr << "The program has a timing anomaly." << endl;
-    } else {
-        cerr << "The program does not have a timing anomaly." << endl;
-    }
+    // if (ta) {
+    //     cerr << "The program has a timing anomaly." << endl;
+    // } else {
+    //     cerr << "The program does not have a timing anomaly." << endl;
+    // }
     
-    {
-        ofstream outfile("out1.tmp");
-        if (outfile.is_open()) {
-            outfile << dump_trace(prog);
-            outfile.close();
-            cerr << "Trace dumped to out1.tmp" << endl;
-        } else {
-            cerr << "Failed to open file for writing trace." << endl;
-        }
-    }
+    // {
+    //     ofstream outfile("out1.tmp");
+    //     if (outfile.is_open()) {
+    //         outfile << dump_trace(prog);
+    //         outfile.close();
+    //         cerr << "Trace dumped to out1.tmp" << endl;
+    //     } else {
+    //         cerr << "Failed to open file for writing trace." << endl;
+    //     }
+    // }
 
-    for (auto& instr : prog) {
-        instr.br_pred = false;
-    }
+    // for (auto& instr : prog) {
+    //     instr.br_pred = false;
+    // }
 
-    {
-        ofstream outfile("out2.tmp");
-        if (outfile.is_open()) {
-            outfile << dump_trace(prog);
-            outfile.close();
-            cerr << "Trace dumped to out2.tmp" << endl;
-        } else {
-            cerr << "Failed to open file for writing trace." << endl;
-        }
-    }
+    // {
+    //     ofstream outfile("out2.tmp");
+    //     if (outfile.is_open()) {
+    //         outfile << dump_trace(prog);
+    //         outfile.close();
+    //         cerr << "Trace dumped to out2.tmp" << endl;
+    //     } else {
+    //         cerr << "Failed to open file for writing trace." << endl;
+    //     }
+    // }
+
+    random_search_TA();
 
     return 0;
 }
