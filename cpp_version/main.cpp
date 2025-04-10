@@ -324,6 +324,13 @@ bool next_state(PipelineState& state, vector<Instr> prog)
         }
     }
 
+    for (int i = 0; i < SUPERSCALAR; i++) {
+        if (state.stage_IF[i].idx != -1 && prog[state.stage_IF[i].idx].br_pred) {
+            state.pc = state.stage_IF[i].idx + prog[state.stage_IF[i].idx].mispred_region + 1;
+            
+        }
+    }
+
     return state.completed >= (int)prog.size() - 1;
 
 }
@@ -412,6 +419,8 @@ void print_program(const vector<Instr>& prog)
     }
 }
 
+
+
 int main(int argc, char *argv[]) 
 {
     if (argc < 2) {
@@ -431,6 +440,10 @@ int main(int argc, char *argv[])
     state.clock_cycle = 0;
     state.pc = 0;
 
+    for (auto& instr : prog) {
+        instr.br_pred = true;
+    }
+
     for (int i = 0; i < 100; i++) {
         // cout << " ======== Clock Cycle: " << state.clock_cycle << " ========\n";
         // cout << state;
@@ -444,6 +457,7 @@ int main(int argc, char *argv[])
         
         state.clock_cycle++;
     }
+
     
     return 0;
 }
