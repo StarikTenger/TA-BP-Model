@@ -456,6 +456,20 @@ void print_program(const vector<Instr>& prog)
     }
 }
 
+void  misprediction_on(vector<Instr>& prog) 
+{
+    for (auto& instr : prog) {
+        instr.br_pred = false;
+    }
+}
+
+void  misprediction_off(vector<Instr>& prog) 
+{
+    for (auto& instr : prog) {
+        instr.br_pred = true;
+    }
+}
+
 bool has_TA(vector<Instr>& prog)
 {
     PipelineState state;
@@ -470,9 +484,7 @@ bool has_TA(vector<Instr>& prog)
     state.clock_cycle = 0;
     state.pc = 0;
 
-    for (auto& instr : prog) {
-        instr.br_pred = true;
-    }
+    misprediction_off(prog);
 
     for (int i = 0; !next_state(state, prog) && i < 100; i++) {}
 
@@ -558,15 +570,69 @@ vector<Instr> random_program(int size) {
     return prog;
 }
 
+set<int> unused_instrs(const vector<Instr>& prog) {
+    set<int> unused;
+
+    for (int i = 0; i < prog.size(); i++) {
+        unused.insert(i);
+    }
+    
+    PipelineState state;
+
+    for (int i = 0; !next_state(state, prog) && i < 100; i++) {
+        for (const auto& entry : state.stage_IF) {
+            if (entry.idx != -1) {
+                unused.erase(entry.idx);
+            }
+        }
+    }
+
+    return unused;
+}
+
+void remove_unused(vector<Instr>& prog) {
+    set<int> unused = unused_instrs(prog);
+    int deleted = 0;
+
+    vector<int> active_branches;
+
+    for (int i = 0; i < prog.size(); i++) {
+            if (unused.contains(i + deleted)) {
+            prog.erase(prog.begin() + i);
+            i--;
+            deleted++;
+
+            for (auto br : active_branches) {
+                prog[br].mispred_region--;
+            }
+        }
+
+        while (active_branches.size() && i > active_branches.back() + prog[active_branches.back()].mispred_region) {
+            active_branches.pop_back();
+            
+        }
+        
+        if (prog[i].mispred_region) {
+            active_branches.push_back(i);
+        }
+
+        
+    }
+}
+
 void random_search_TA() {
     int iterations = 10000000;
-    int size = 3;
+    int size = 4;
     for (int i = 0; i < iterations; i++) {
         vector<Instr> prog = random_program(size);
         PipelineState state;
         
         if (has_TA(prog)) {
             cerr << "Found a timing anomaly" << endl;
+
+            misprediction_on(prog);
+            remove_unused(prog);
+
             print_program(prog);
 
             {
@@ -580,9 +646,7 @@ void random_search_TA() {
                 }
             }
 
-            for (auto& instr : prog) {
-                instr.br_pred = false;
-            }
+            misprediction_off(prog);
 
             {
                 ofstream outfile("out2.tmp");
@@ -656,6 +720,14 @@ int main(int argc, char *argv[])
     //         cerr << "Failed to open file for writing trace." << endl;
     //     }
     // }
+
+    if (argc > 1) {
+        int seed = atoi(argv[1]);
+        srand(seed);
+        cerr << "Using seed: " << seed << endl;
+    } else {
+        cerr << "No seed provided. Using default seed." << endl;
+    }
 
     random_search_TA();
 
