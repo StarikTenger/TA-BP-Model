@@ -727,6 +727,7 @@ int main(int argc, char *argv[])
         cerr << "Using seed: " << seed << endl;
     } else {
         cerr << "No seed provided. Using default seed." << endl;
+        srand(time(0));
     }
 
     random_search_TA();
