@@ -620,7 +620,8 @@ void remove_unused(vector<Instr>& prog) {
     }
 }
 
-void random_search_TA() {
+void random_search_TA() 
+{
     int iterations = 10000000;
     int size = 4;
     for (int i = 0; i < iterations; i++) {
@@ -666,6 +667,87 @@ void random_search_TA() {
             cerr << "Iteration: " << i << ", No timing anomaly found" << endl;
         }
     }
+}
+
+bool vector_next(vector<int>& v, vector<int>& max) 
+{
+    for (int i = v.size() - 1; i >= 0; i--) {
+        if (v[i] < max[i]) {
+            v[i]++;
+            return true;
+        } else {
+            v[i] = 0;
+        }
+    }
+    return false;
+}
+
+bool deps_next(vector<pair<int, int>>& deps, int prog_len) 
+{
+    int n = prog_len;
+    int size = deps.size();
+
+    for (int i = size - 1; i >= 0; i--) {
+        int& a = deps[i].first;
+        int& b = deps[i].second;
+
+        if (b < n - 1) {
+            b++;
+            bool out_of_bounds = false;
+            for (int j = i + 1; j < size; j++) {
+                deps[j].first = deps[i].first;
+                deps[j].second = deps[i].second + 1 + (j - i - 1);
+            }
+
+            for (int j = 0; j < size; j++) {
+                if (deps[j].second >= n) {
+                    out_of_bounds = true;
+                }
+            }
+
+            if (out_of_bounds) {
+                return deps_next(deps, prog_len);
+            }
+            return true;
+        } else if (a < n - 2) {
+            a++;
+            b = a + 1;
+            bool out_of_bounds = false;
+            for (int j = i + 1; j < size; j++) {
+                deps[j].first = deps[i].first;
+                deps[j].second = deps[i].second + 1 + (j - i - 1);
+            }
+
+            for (int j = 0; j < size; j++) {
+                if (deps[j].second >= n) {
+                    out_of_bounds = true;
+                }
+            }
+
+            if (out_of_bounds) {
+                return deps_next(deps, prog_len);
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void total_search_TA() 
+{
+    int size = 4;
+    vector<int> types(size);
+    vector<int> type_bounds(size, FU_NUM - 1);
+    vector<pair<int, int>> deps = {{0,1}, {0,2}};
+
+    do {
+        for (int before_spec = 0; before_spec < size; before_spec++) {
+            int after_spec = size - before_spec;
+        }
+        
+    } while (vector_next(types, type_bounds));
+    
 }
 
 int main(int argc, char *argv[]) 
@@ -721,16 +803,46 @@ int main(int argc, char *argv[])
     //     }
     // }
 
-    if (argc > 1) {
-        int seed = atoi(argv[1]);
-        srand(seed);
-        cerr << "Using seed: " << seed << endl;
-    } else {
-        cerr << "No seed provided. Using default seed." << endl;
-        srand(time(0));
+    // if (argc > 1) {
+    //     int seed = atoi(argv[1]);
+    //     srand(seed);
+    //     cerr << "Using seed: " << seed << endl;
+    // } else {
+    //     cerr << "No seed provided. Using default seed." << endl;
+    //     srand(time(0));
+    // }
+
+    // random_search_TA();
+
+    vector<pair<int, int>> deps = {{0,1}, {0,2}};
+    int prog_len = 4;
+
+
+    int i = 0;
+    do {
+        i++;
+        cout << i << ": ";
+        for (const auto& dep : deps) {
+            cout << "" << dep.first << " -> " << dep.second << "; ";
+        }
+        cout << endl;
+    } while (deps_next(deps, prog_len));
+
+    cout << "\n";
+
+    int n = prog_len;
+    i = 0;
+    for (int a = 0; a < n - 2; a++) {
+        for (int b = a + 1; b < n; b++) {
+            for (int c = a; c < n - 1; c++) {
+                for (int d = a == c ? b + 1 : c + 1; d < n; d++) {
+                    i++;
+                    cout << i << ": " << a << " -> " << b << "; " << c << " -> " << d << endl;
+                }
+            }
+        }
     }
 
-    random_search_TA();
 
     return 0;
 }
