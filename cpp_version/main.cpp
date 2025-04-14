@@ -472,6 +472,8 @@ void  misprediction_off(vector<Instr>& prog)
 
 bool has_TA(vector<Instr>& prog)
 {
+    misprediction_on(prog);
+
     PipelineState state;
     state.clock_cycle = 0;
     state.pc = 0;
@@ -736,18 +738,102 @@ bool deps_next(vector<pair<int, int>>& deps, int prog_len)
 
 void total_search_TA() 
 {
-    int size = 4;
+    int size = 3;
     vector<int> types(size);
     vector<int> type_bounds(size, FU_NUM - 1);
-    vector<pair<int, int>> deps = {{0,1}, {0,2}};
+    vector<int> fu_lats = {4, 4};
+    int mispred_size = 20;
+    int count = 0;
 
     do {
-        for (int before_spec = 0; before_spec < size; before_spec++) {
-            int after_spec = size - before_spec;
-        }
-        
+        vector<pair<int, int>> deps = {{0,1}};
+        do {
+            for (int before_spec = 1; before_spec < size; before_spec++) {
+                int after_spec = size - before_spec;
+                vector<Instr> prog;
+
+                for (int i = 0; i < before_spec; i++) {
+                    Instr instr;
+                    instr.fu_type = types[i];
+                    instr.lat_fu = fu_lats[instr.fu_type];
+                    instr.mispred_region = 0;
+
+                    prog.push_back(instr);
+                }
+                prog[before_spec - 1].lat_fu = 1;
+                prog[before_spec - 1].mispred_region = mispred_size;
+
+                for (int i = 0; i < mispred_size; i++) {
+                    Instr instr;
+                    instr.fu_type = 0;
+                    instr.lat_fu = fu_lats[instr.fu_type];
+                    instr.mispred_region = 0;
+
+                    prog.push_back(instr);
+                }
+
+                for (int i = 0; i < after_spec; i++) {
+                    Instr instr;
+                    instr.fu_type = types[before_spec + i];
+                    instr.lat_fu = fu_lats[instr.fu_type];
+                    instr.mispred_region = 0;
+
+                    prog.push_back(instr);
+                }
+
+                for (int i = 0; i < deps.size(); i++) {
+                    int from = deps[i].first;
+                    int to = deps[i].second;
+                    if (from >= before_spec) from += mispred_size;
+                    if (to >= before_spec) to += mispred_size;
+                    prog[to].data_deps.insert(from);
+                }
+
+                count++;
+                if (count % 100000 == 0) {
+                    cerr << "Iteration: " << count << ", No timing anomaly found" << endl;
+                }
+
+                if (has_TA(prog)) {
+                    cerr << "Found a timing anomaly" << endl;
+
+                    misprediction_on(prog);
+                    remove_unused(prog);
+
+                    print_program(prog);
+
+                    {
+                        ofstream outfile("out1.tmp");
+                        if (outfile.is_open()) {
+                            outfile << dump_trace(prog);
+                            outfile.close();
+                            cerr << "Trace dumped to out1.tmp" << endl;
+                        } else {
+                            cerr << "Failed to open file for writing trace." << endl;
+                        }
+                    }
+
+                    misprediction_off(prog);
+
+                    {
+                        ofstream outfile("out2.tmp");
+                        if (outfile.is_open()) {
+                            outfile << dump_trace(prog);
+                            outfile.close();
+                            cerr << "Trace dumped to out2.tmp" << endl;
+                        } else {
+                            cerr << "Failed to open file for writing trace." << endl;
+                        }
+                    }
+
+                    return;
+                }
+
+            }
+        } while (deps_next(deps, size));
     } while (vector_next(types, type_bounds));
     
+    cout << "Checked " << count << " programs. No TA found" << endl;
 }
 
 int main(int argc, char *argv[]) 
@@ -814,34 +900,36 @@ int main(int argc, char *argv[])
 
     // random_search_TA();
 
-    vector<pair<int, int>> deps = {{0,1}, {0,2}};
-    int prog_len = 4;
+    // vector<pair<int, int>> deps = {{0,1}, {0,2}};
+    // int prog_len = 4;
 
 
-    int i = 0;
-    do {
-        i++;
-        cout << i << ": ";
-        for (const auto& dep : deps) {
-            cout << "" << dep.first << " -> " << dep.second << "; ";
-        }
-        cout << endl;
-    } while (deps_next(deps, prog_len));
+    // int i = 0;
+    // do {
+    //     i++;
+    //     cout << i << ": ";
+    //     for (const auto& dep : deps) {
+    //         cout << "" << dep.first << " -> " << dep.second << "; ";
+    //     }
+    //     cout << endl;
+    // } while (deps_next(deps, prog_len));
 
-    cout << "\n";
+    // cout << "\n";
 
-    int n = prog_len;
-    i = 0;
-    for (int a = 0; a < n - 2; a++) {
-        for (int b = a + 1; b < n; b++) {
-            for (int c = a; c < n - 1; c++) {
-                for (int d = a == c ? b + 1 : c + 1; d < n; d++) {
-                    i++;
-                    cout << i << ": " << a << " -> " << b << "; " << c << " -> " << d << endl;
-                }
-            }
-        }
-    }
+    // int n = prog_len;
+    // i = 0;
+    // for (int a = 0; a < n - 2; a++) {
+    //     for (int b = a + 1; b < n; b++) {
+    //         for (int c = a; c < n - 1; c++) {
+    //             for (int d = a == c ? b + 1 : c + 1; d < n; d++) {
+    //                 i++;
+    //                 cout << i << ": " << a << " -> " << b << "; " << c << " -> " << d << endl;
+    //             }
+    //         }
+    //     }
+    // }
+
+    total_search_TA();
 
 
     return 0;
