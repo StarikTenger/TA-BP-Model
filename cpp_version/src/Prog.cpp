@@ -281,3 +281,33 @@ void remove_unused(vector<Instr>& prog)
         
     }
 }
+
+void dump_pair_of_traces(vector<Instr> prog, std::string filename1, std::string filename2)
+{
+    misprediction_on(prog);
+    remove_unused(prog);
+
+    {
+        ofstream outfile(filename1);
+        if (outfile.is_open()) {
+            outfile << dump_trace(prog);
+            outfile.close();
+            cerr << "Trace dumped to " << filename1 << endl;
+        } else {
+            cerr << "Failed to open file for writing trace." << endl;
+        }
+    }
+
+    misprediction_off(prog);
+
+    {
+        ofstream outfile(filename2);
+        if (outfile.is_open()) {
+            outfile << dump_trace(prog);
+            outfile.close();
+            cerr << "Trace dumped to " << filename1 << endl;
+        } else {
+            cerr << "Failed to open file for writing trace." << endl;
+        }
+    }
+}

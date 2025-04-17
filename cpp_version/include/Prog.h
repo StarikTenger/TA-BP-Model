@@ -36,3 +36,5 @@ bool has_TA(std::vector<Instr>& prog);
 std::set<int> unused_instrs(const std::vector<Instr>& prog);
 
 void remove_unused(std::vector<Instr>& prog);
+
+void dump_pair_of_traces(std::vector<Instr> prog, std::string filename1, std::string filename2);

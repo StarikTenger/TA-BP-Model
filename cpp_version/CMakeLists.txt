@@ -12,15 +12,20 @@ project (pipeline_model)
 set(SOURCES
     src/PipelineState.cpp
     src/Prog.cpp
-    src/main.cpp
 )
 
-# Add an executable with the above sources
-add_executable(pipeline_model ${SOURCES})
-
-# Set the directories that should be included in the build command for this target
-# when running g++ these will be included as -I/directory/path/
-target_include_directories(pipeline_model
-    PRIVATE 
-        ${PROJECT_SOURCE_DIR}/include
+set(TARGETS
+    exec_prog
+    exhaustive_search
+    random_search
 )
+foreach(TARGET ${TARGETS})
+    # Add an executable for each target using the sources and the target-specific cpp file
+    add_executable(${TARGET} ${SOURCES} targets/${TARGET}.cpp)
+
+    # Set the directories that should be included in the build command for this target
+    target_include_directories(${TARGET}
+        PRIVATE 
+            ${PROJECT_SOURCE_DIR}/include
+    )
+endforeach()
