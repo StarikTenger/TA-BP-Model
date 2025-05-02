@@ -1,0 +1,68 @@
+FU1 #1 [7]
+FU2 @1 [4]
+FU1  [1]
+    FU2  [1] *
+        FU2  [4]
+        FU2  [4]
+        FU2  [4]
+        FU2  [4]
+        FU2  [4]
+    FU1  [4]
+    FU2  [4]
+    FU2  [4]
+
+	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	20
+1	IF	ID	FU1	FU1	FU1	FU1	FU1	FU1	FU1	COM	
+2		IF	ID	rs2	rs2	rs2	rs2	rs2	rs2	FU2	FU2	FU2	FU2	COM	
+3			IF	ID	rs1	rs1	rs1	rs1	rs1	FU1	rob	rob	rob	rob	COM	
+4				IF	ID	FU2	rob	rob	rob	rob	#squashed	
+5					IF	ID	#squashed	
+6						IF	#squashed	
+10							IF	ID	rs1	rs1	#squashed	
+11								IF	ID	rs2	#squashed	
+12									IF	ID	#squashed	
+--------------------------------------------------------------------
+	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18
+1	IF	ID	FU1	FU1	FU1	FU1	FU1	FU1	FU1	COM	
+2		IF	ID	rs2	rs2	rs2	rs2	rs2	rs2	rs2	FU2	FU2	FU2	FU2	COM	
+3			IF	ID	rs1	rs1	rs1	rs1	rs1	FU1	rob	rob	rob	rob	rob	COM	
+4				IF	ID	FU2	rob	rob	rob	rob	#squashed	
+10					IF	ID	rs1	rs1	rs1	rs1	#squashed	
+11						IF	ID	FU2	FU2	FU2	#squashed	
+12							IF	ID	rs2	rs2	#squashed	
+
+
+FU1 #1 [7]
+FU2 @1 [4]
+FU1  [1]
+    FU2  [3] *
+        FU2  [4]
+        FU2  [4]
+        FU2  [4]
+        FU2  [4]
+        FU2  [4]
+    FU1  [4]
+    FU2  [4]
+    FU2  [4]
+
+	1	2	3	4	5	6	7	8	9	10	11	12
+1	IF	ID	FU1	FU1	FU1	FU1	FU1	FU1	FU1	COM	
+2		IF	ID	rs2	rs2	rs2	rs2	rs2	rs2	FU2	FU2	FU2	FU2	COM	
+3			IF	ID	rs1	rs1	rs1	rs1	rs1	FU1	rob	rob	rob	rob	COM	
+4				IF	ID	FU2	FU2	FU2	rob	rob	#squashed	
+5					IF	ID	rs2	rs2	#squashed	
+6						IF	ID	rs2	#squashed	
+7							IF	ID	#squashed	
+8								IF	#squashed	
+10									IF	ID	#squashed	
+11										IF	#squashed	
+--------------------------------------------------------------------
+	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18
+1	IF	ID	FU1	FU1	FU1	FU1	FU1	FU1	FU1	COM	
+2		IF	ID	rs2	rs2	rs2	rs2	rs2	rs2	rs2	FU2	FU2	FU2	FU2	COM	
+3			IF	ID	rs1	rs1	rs1	rs1	rs1	FU1	rob	rob	rob	rob	rob	COM	
+4				IF	ID	FU2	FU2	FU2	rob	rob	#squashed	
+10					IF	ID	rs1	rs1	rs1	rs1	#squashed	
+11						IF	ID	rs2	FU2	FU2	#squashed	
+12							IF	ID	rs2	rs2	#squashed	
+
