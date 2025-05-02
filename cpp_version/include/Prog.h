@@ -19,7 +19,7 @@ struct Instr
     bool br_pred = false;
 };
 
-std::vector<Instr> read_program(const std::string& filename);
+std::vector<Instr> read_program(const std::string& filename, bool alt = false);
 
 void print_program(const std::vector<Instr>& prog);
 

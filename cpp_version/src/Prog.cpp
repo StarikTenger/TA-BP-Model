@@ -4,7 +4,7 @@
 
 using namespace std;
 
-vector<Instr> read_program(const string& filename) 
+vector<Instr> read_program(const string& filename, bool alt) 
 {
     ifstream file(filename);
     vector<Instr> prog;
@@ -46,9 +46,22 @@ vector<Instr> read_program(const string& filename)
                 } else if (token[0] == '@') {
                     instr.data_deps.insert(label_map[token.substr(1)]);
                 } else if (token[0] == '[' && token.back() == ']') {
-                    instr.lat_fu = stoi(token.substr(1, token.size() - 2));
+                    if (token.find('|') != string::npos) {
+                        size_t delimiter_pos = token.find('|');
+                        int n = stoi(token.substr(1, delimiter_pos - 1));
+                        int m = stoi(token.substr(delimiter_pos + 1, token.size() - delimiter_pos - 2));
+                        instr.lat_fu = alt ? m : n;
+                    } else {
+                        instr.lat_fu = stoi(token.substr(1, token.size() - 2));
+                    }
                 } else if (token[0] == '#') {
                     label_map[token.substr(1)] = prog.size();
+                } else if (token == "*") {
+                    if (alt) {
+                        instr.br_pred = true;
+                    } else {
+                        instr.br_pred = false;
+                    }
                 }
             }
 
@@ -130,56 +143,6 @@ void misprediction_off(vector<Instr>& prog)
     for (auto& instr : prog) {
         instr.br_pred = true;
     }
-}
-
-vector<Instr> random_program(int size) {
-    vector<int> fu_lats = {4, 7};
-
-    int before_spec = random_int(1, size - 1);
-    int after_spec = size - before_spec;
-    int spec = 20;
-
-    vector<Instr> prog;
-
-    for (int i = 0; i < before_spec; i++) {
-        Instr instr;
-        instr.fu_type = random_int(0, FU_NUM - 1);
-        instr.lat_fu = fu_lats[instr.fu_type];
-        instr.mispred_region = 0;
-
-        prog.push_back(instr);
-    }
-    prog[before_spec - 1].lat_fu = 1;
-    prog[before_spec - 1].mispred_region = spec;
-
-    for (int i = 0; i < spec; i++) {
-        Instr instr;
-        instr.fu_type = random_int(0, FU_NUM - 1);
-        instr.lat_fu = fu_lats[instr.fu_type];
-        instr.mispred_region = 0;
-
-        prog.push_back(instr);
-    }
-
-    for (int i = 0; i < after_spec; i++) {
-        Instr instr;
-        instr.fu_type = random_int(0, FU_NUM - 1);
-        instr.lat_fu = fu_lats[instr.fu_type];
-        instr.mispred_region = 0;
-
-        prog.push_back(instr);
-    }
-
-    int deps = 2;
-    for (int i = 0; i < deps; i++) {
-        int from = random_int(0, prog.size() - 2);
-        int to = random_int(from + 1, prog.size() - 1);
-        if (from < before_spec || from >= before_spec + spec) {
-            prog[to].data_deps.insert(from);
-        }
-    }
-
-    return prog;
 }
 
 string dump_trace(const vector<Instr>& prog) 

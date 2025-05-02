@@ -12,12 +12,14 @@ project (pipeline_model)
 set(SOURCES
     src/PipelineState.cpp
     src/Prog.cpp
+    src/Util.cpp
 )
 
 set(TARGETS
     exec_prog
     exhaustive_search
     random_search
+    compare_traces
 )
 foreach(TARGET ${TARGETS})
     # Add an executable for each target using the sources and the target-specific cpp file
