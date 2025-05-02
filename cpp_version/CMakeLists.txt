@@ -12,6 +12,7 @@ project (pipeline_model)
 set(SOURCES
     src/PipelineState.cpp
     src/Prog.cpp
+    src/TraceDiagonal.cpp
     src/Util.cpp
 )
 

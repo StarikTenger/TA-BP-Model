@@ -1,4 +1,5 @@
 #include "PipelineState.h"
+#include "TraceDiagonal.h"
 
 #include <iostream>
 #include <vector>
@@ -24,11 +25,19 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    cout << "Original" << endl;
+    cerr << "Original" << endl;
     print_program(prog);
     cout << endl;
 
     vector<Instr> prog_alt = read_program(filename, true);
-    cout << "Alternative" << endl;
+    cerr << "Alternative" << endl;
     print_program(prog_alt);
+
+    TraceDiagonal trace_diag(prog);
+    cout << trace_diag.serizlize();
+
+    cout << "--------------------------------------------------------------------\n";
+
+    TraceDiagonal trace_diag_alt(prog_alt);
+    cout << trace_diag_alt.serizlize();
 }
