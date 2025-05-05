@@ -3,13 +3,14 @@
 #include "PipelineState.h"
 
 using namespace std;
-
+ 
 TraceDiagonal::TraceDiagonal(std::vector<Instr> prog) 
 {
     table = vector<Row>(prog.size());
 
     PipelineState state;
-    for (int cc = 0; !state.next(prog); cc++) {
+    for (int cc = 0; !state.next(prog) && cc < 40; cc++) {
+        cerr << "Cycle: " << cc << endl;
         // Fetch stage
         for (const auto& entry : state.stage_IF) {
             if (entry.idx >= 0) {
@@ -75,6 +76,10 @@ int TraceDiagonal::get(int instr, int cycle) const
 string TraceDiagonal::serizlize() const
 {
     stringstream ss;
+    for (int i = 0; i < table.back().res.size() + table.back().offset; i++) {
+        ss << "\t" << i + 1;
+    }
+    ss << endl;
     for (int i = 0; i < table.size(); i++) {
         if (table[i].res.size() == 0) {
             continue;
@@ -113,4 +118,9 @@ string TraceDiagonal::serizlize() const
         ss << endl;
     }
     return ss.str();
+}
+
+int TraceDiagonal::length_cc() const
+{
+    return table.back().res.size() + table.back().offset;
 }

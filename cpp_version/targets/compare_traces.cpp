@@ -36,8 +36,12 @@ int main(int argc, char *argv[])
     TraceDiagonal trace_diag(prog);
     cout << trace_diag.serizlize();
 
-    cout << "--------------------------------------------------------------------\n";
-
     TraceDiagonal trace_diag_alt(prog_alt);
+
+    for (int i = 0; i < max(trace_diag.length_cc(), trace_diag_alt.length_cc()) + 1; i++) {
+        cout << "----";
+    }
+    cout << endl;
+
     cout << trace_diag_alt.serizlize();
 }

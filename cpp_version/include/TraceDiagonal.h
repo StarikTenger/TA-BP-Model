@@ -27,6 +27,8 @@ public:
 
     std::string serizlize() const;
 
+    int length_cc() const;
+
 private:
     
     struct Row {
