@@ -12,7 +12,6 @@ TraceDiagonal::TraceDiagonal(std::vector<Instr> prog)
     const int CYCLE_LIMIT = 1000;
 
     for (int cc = 0; !state.next(prog) && cc < CYCLE_LIMIT; cc++) {
-        cerr << "Cycle: " << cc << endl;
         // Fetch stage
         for (const auto& entry : state.stage_IF) {
             if (entry.idx >= 0) {
