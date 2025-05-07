@@ -9,7 +9,9 @@ TraceDiagonal::TraceDiagonal(std::vector<Instr> prog)
     table = vector<Row>(prog.size());
 
     PipelineState state;
-    for (int cc = 0; !state.next(prog) && cc < 40; cc++) {
+    const int CYCLE_LIMIT = 1000;
+
+    for (int cc = 0; !state.next(prog) && cc < CYCLE_LIMIT; cc++) {
         cerr << "Cycle: " << cc << endl;
         // Fetch stage
         for (const auto& entry : state.stage_IF) {
@@ -65,6 +67,9 @@ TraceDiagonal::TraceDiagonal(std::vector<Instr> prog)
             }
         }
 
+        if (cc == CYCLE_LIMIT - 1) {
+            cerr << "Reached the limit of " << CYCLE_LIMIT << " cycles" << endl;
+        }
     }
 }
 

@@ -91,7 +91,7 @@ bool PipelineState::next(const vector<Instr> &prog)
     // Commit stage
     for (int i = 0; i < SUPERSCALAR; i++) {
         if (stage_COM[i] != -1) {
-            completed = stage_COM[i];
+            completed = stage_COM[i] + prog[stage_COM[i]].mispred_region;
             stage_COM[i] = -1;
         }
     }
