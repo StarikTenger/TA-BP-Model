@@ -34,7 +34,8 @@ struct PipelineState
     int completed = -1; // The highest index of the instruction that has been completed
     std::set<int> executed; // Instructions that have been executed
     std::set<int> squashed; // Instructions that have been squashed
-
+    std::vector<int> branch_stack; // Stack of branch instructions
+    
     PipelineState();
 
     std::string formatted_string();

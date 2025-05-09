@@ -80,7 +80,15 @@ int TraceDiagonal::get(int instr, int cycle) const
 string TraceDiagonal::serizlize() const
 {
     stringstream ss;
-    for (int i = 0; i < table.back().res.size() + table.back().offset; i++) {
+
+    int time_size = 0;
+    for (const auto& row : table) {
+        if (!row.res.empty()) {
+            time_size = max(time_size, static_cast<int>(row.res.size() + row.offset));
+        }
+    }
+
+    for (int i = 0; i < time_size; i++) {
         ss << "\t" << i + 1;
     }
     ss << endl;

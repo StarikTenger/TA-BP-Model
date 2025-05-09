@@ -105,6 +105,12 @@ bool PipelineState::next(const vector<Instr> &prog)
             // Squash next instrucions
             for (int j = 0; j < prog[stage_FU[i].idx].mispred_region; j++) {
                 squashed.insert(stage_FU[i].idx + 1 + j);
+                
+            }
+
+            if (prog[stage_FU[i].idx].mispred_region && !prog[stage_FU[i].idx].br_pred) {
+                branch_stack.pop_back();
+                cerr << "BR POP\n";
             }
 
             executed.insert(stage_FU[i].idx);
@@ -218,28 +224,50 @@ bool PipelineState::next(const vector<Instr> &prog)
         if (stage_IF[i].cycles_left == 0 && stage_IF[i].idx != -1) {
             stage_ID[i] = stage_IF[i].idx;
             stage_IF[i].idx = -1;
-        }
-    }
-    
-    // Fetch next instruction
-    for (int i = 0; i < SUPERSCALAR; i++) {
-        if (stage_IF[i].idx == -1) {
-            if (pc < prog.size()) {
-                stage_IF[i].idx = pc;
-                stage_IF[i].cycles_left = 1;
-                pc++;
+
+            if (prog[stage_ID[i]].mispred_region && !prog[stage_ID[i]].br_pred) {
+                branch_stack.push_back(stage_ID[i]);
+                cerr << "BR PUSH\n";
             }
         }
     }
-
-    for (int i = 0; i < SUPERSCALAR; i++) {
-        if (stage_IF[i].idx != -1 && prog[stage_IF[i].idx].br_pred) {
-            pc = stage_IF[i].idx + prog[stage_IF[i].idx].mispred_region + 1;
-            
+    
+    // Fetch next instruction)
+    bool can_fetch = true;
+    for (const auto& entry : branch_stack) {
+        if (pc > entry + prog[entry].mispred_region) {
+            can_fetch = false;
+            break;
         }
     }
 
+    if (can_fetch) {
+        for (int i = 0; i < SUPERSCALAR; i++) {
+            if (stage_IF[i].idx == -1) {
+                if (pc < prog.size()) {
+                    stage_IF[i].idx = pc;
+                    stage_IF[i].cycles_left = 1;
+                    pc++;
+                }
+            }
+        }
+    
+        for (int i = 0; i < SUPERSCALAR; i++) {
+            if (stage_IF[i].idx != -1 && prog[stage_IF[i].idx].br_pred) {
+                pc = stage_IF[i].idx + prog[stage_IF[i].idx].mispred_region + 1;  
+            }
+        }
+    } else {
+        cerr << "Stalling\n";
+    }
+
     clock_cycle++;
+
+    cerr << clock_cycle << ": ";
+    for (auto n : branch_stack) {
+        cerr <<  n << " ";
+    }
+    cerr << endl;
 
     return completed >= (int)prog.size() - 1;
 }
