@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Text Block and Input Layout</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .left-block {
+            flex: 1;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Align content to the left */
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .right-block {
+            flex: 1;
+            max-width: 50vw;
+            background: #ebebeb;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .text-input {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            min-width: 0;
+            max-width: 100%;
+            max-height: 100%;
+            padding: 10px;
+            font-size: 10px;
+            box-sizing: border-box;
+            resize: none;
+            display: block;
+            tab-size: 4;
+        }
+        .right-block > div {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-block" style="position:relative;">
+            <div id="show-trace">
+                <h2>Text Block</h2>
+                <p>This is the text block on the left side of the page.</p>
+            </div>
+            <div id="nav-btns" style="position:absolute; left:40px; bottom:40px;">
+                <button id="prev-btn" disabled style="margin-right:10px; opacity:0.5;">Prev</button>
+                <span id="frame-counter" style="min-width:40px; display:inline-block; text-align:center;">1/1</span>
+                <button id="next-btn" disabled style="margin-left:10px; opacity:0.5;">Next</button>
+            </div>
+        </div>
+        <div class="right-block">
+            <div style="width:100%;">
+                <textarea class="text-input" id="input-area" placeholder="Enter text here"></textarea>
+                <div style="margin-top:10px;">
+                    <button id="parse-btn">Parse</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
