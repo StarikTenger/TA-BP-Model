@@ -74,7 +74,11 @@ TraceDiagonal::TraceDiagonal(std::vector<Instr> prog)
 
 int TraceDiagonal::get(int instr, int cycle) const
 {
-    return table[instr].res[cycle - table[instr].offset];
+    if (instr < 0 || instr >= table.size()) return NONE;
+    const auto& row = table[instr];
+    int idx = cycle - row.offset;
+    if (idx < 0 || idx >= row.res.size()) return NONE;
+    return row.res[idx] / SPACING;
 }
 
 string TraceDiagonal::serizlize() const

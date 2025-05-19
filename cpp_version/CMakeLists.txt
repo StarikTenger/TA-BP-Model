@@ -14,6 +14,7 @@ set(SOURCES
     src/Prog.cpp
     src/TraceDiagonal.cpp
     src/Util.cpp
+    src/EventTable.cpp
 )
 
 set(TARGETS
@@ -21,6 +22,7 @@ set(TARGETS
     exhaustive_search
     random_search
     compare_traces
+    event_table
 )
 foreach(TARGET ${TARGETS})
     # Add an executable for each target using the sources and the target-specific cpp file
