@@ -90,6 +90,7 @@ def draw_event(ax, plot_time, instr_idx, label, color):
         ax.text(plot_time, instr_idx + 0.45, label, rotation=90, va='bottom', ha='center', fontsize=8, color=color)
 
 def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None):
+    import numpy as np
     num_instr = len(data)
     time_counts = [{time: row.count(time) for time in set(row) if time >= 0} for row in data]
 
@@ -150,22 +151,78 @@ def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None)
         min_time = min(all_times)
         max_time = max(all_times)
         ax.set_xticks(range(min_time, max_time + 1))
+        ax.set_xlim(min_time - 1, max_time + 1)  # Always show all timings with some margin
 
-    # Draw change arrows if provided
+    # Always show all instructions
+    ax.set_ylim(num_instr - 0.5, -0.5)  # Inverted y-axis, so -0.5 is top, num_instr-0.5 is bottom
+
+    # Draw change arrows if provided, stacking them on different levels to avoid overlap
     if change_arrows:
+        # Assign levels to arrows to avoid overlap
+        level_height = 0.18  # vertical shift per level
+        arrow_segments = []
         for (from_instr, from_event, from_time, to_instr, to_event, to_time, label) in change_arrows:
+            key = (min(from_time, to_time), max(from_time, to_time), from_instr, to_instr)
+            arrow_segments.append((key, (from_instr, from_event, from_time, to_instr, to_event, to_time, label)))
+        arrow_segments.sort()  # Sort for deterministic stacking
+
+        level_map = {}
+        for seg_idx, (key, arrow) in enumerate(arrow_segments):
+            # Find the lowest available level for this time range
+            occupied = set()
+            for prev_key, prev_level in level_map.items():
+                if not (key[1] < prev_key[0] or key[0] > prev_key[1]):
+                    occupied.add(prev_level)
+            level = 0
+            while level in occupied:
+                level += 1
+            level_map[key] = level
+
+            from_instr, from_event, from_time, to_instr, to_event, to_time, label = arrow
+            base_y_from = from_instr
+            base_y_to = to_instr
+            shift = (level - 0.5) * level_height
+            y_from = base_y_from + shift
+            y_to = base_y_to + shift
+
+            # Draw the main movement arrow (gray dashed)
+            ax.plot([from_time, to_time],
+                    [y_from, y_to],
+                    color='gray', linestyle='dashed', linewidth=2, alpha=0.8, zorder=10)
             ax.annotate(
                 '', 
-                xy=(to_time, to_instr), xytext=(from_time, from_instr),
+                xy=(to_time, y_to), xytext=(from_time, y_from),
                 arrowprops=dict(
                     arrowstyle='->,head_width=1.2,head_length=1.2',
                     color='gray',
-                    lw=3,
+                    lw=2,
                     alpha=0.8,
                     linestyle='dashed'
                 ),
-                zorder=10
+                zorder=11
             )
+
+            # Draw the previous position as a dotted vertical line or arrow, using the event's color and style
+            prev_color = get_event_color(label, from_instr, fu_map)
+            # To avoid overlap, shift each vertical line/arrow slightly horizontally based on its level
+            x_shift = (level - 0.5) * 0.12  # 0.12 is a small horizontal offset per level
+            shifted_from_time = from_time + x_shift
+
+            if "_a" in label:
+                ax.annotate(
+                    '', xy=(shifted_from_time, y_from + 0.4), xytext=(shifted_from_time, y_from - 0.4),
+                    arrowprops=dict(arrowstyle='-|>', color=prev_color, lw=2, linestyle='dotted', alpha=0.7, shrinkA=0, shrinkB=0),
+                    zorder=9
+                )
+            elif "_r" in label:
+                ax.annotate(
+                    '', xy=(shifted_from_time, y_from - 0.4), xytext=(shifted_from_time, y_from + 0.4),
+                    arrowprops=dict(arrowstyle='-|>', color=prev_color, lw=2, linestyle='dotted', alpha=0.7, shrinkA=0, shrinkB=0),
+                    zorder=9
+                )
+            else:
+                ax.vlines(shifted_from_time, y_from - 0.4, y_from + 0.4, color=prev_color, linestyle='dotted', linewidth=2, alpha=0.7, zorder=9)
+            ax.text(shifted_from_time, y_from + 0.45, label, rotation=90, va='bottom', ha='center', fontsize=8, color=prev_color, alpha=0.7, zorder=9)
 
 def find_changes_between_frames(headers, data_prev, data_next):
     """Finds changes between two frames and returns a list of arrows to draw and a set of events that will change."""
