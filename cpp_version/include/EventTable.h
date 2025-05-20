@@ -31,7 +31,12 @@ struct EventTable {
 
     bool operator==(const EventTable& other) const;
 
-    void fromProg(std::vector<Instr>& prog);
+    void fromProg(const std::vector<Instr>& prog);
 
     void print() const;
+
+    bool check_constraints(const std::vector<Instr>& prog, int instr, int event_type, int event_time);
+
+    // Returns the number of event moved
+    int resolution_step(const std::vector<Instr>& prog);
 };

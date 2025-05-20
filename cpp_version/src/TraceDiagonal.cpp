@@ -4,7 +4,7 @@
 
 using namespace std;
  
-TraceDiagonal::TraceDiagonal(std::vector<Instr> prog) 
+TraceDiagonal::TraceDiagonal(const std::vector<Instr>& prog) 
 {
     table = vector<Row>(prog.size());
 

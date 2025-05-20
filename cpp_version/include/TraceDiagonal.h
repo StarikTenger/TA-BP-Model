@@ -21,7 +21,7 @@ class TraceDiagonal {
 public:
     static const int SPACING = 100;
 
-    TraceDiagonal(std::vector<Instr> prog);
+    TraceDiagonal(const std::vector<Instr>& prog);
 
     int get(int instr, int cycle) const;
 

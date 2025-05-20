@@ -26,11 +26,16 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    vector<Instr> prog_alt = read_program(filename, true);
+    print_program(prog_alt);
+    cout << endl;
+
     EventTable event_table;
     event_table.fromProg(prog);
     event_table.print();
-    cout << endl;
 
-    TraceDiagonal trace(prog);
-    cout << trace.serizlize();
+    for (int i = 0; event_table.resolution_step(prog_alt) && i < 20; i++) {
+        cout << "\n";
+        event_table.print();
+    }
 }

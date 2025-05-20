@@ -19,7 +19,7 @@ bool EventTable::operator==(const EventTable& other) const {
     return table == other.table;
 }
 
-void EventTable::fromProg(std::vector<Instr>& prog) {
+void EventTable::fromProg(const std::vector<Instr>& prog) {
     table.resize(prog.size(), std::vector<int>(EVENT_NUM, -1));
 
     TraceDiagonal trace(prog);
@@ -64,4 +64,86 @@ void EventTable::print() const {
         }
         std::cout << std::endl;
     }
+}
+
+bool EventTable::check_constraints(const std::vector<Instr>& prog, int instr, int event_type, int event_time) {
+    if (event_type == IF_Acq) {
+        if (instr == 0) return true;
+        return table[instr - 1][IF_Rel] == -1 || event_time >= table[instr - 1][IF_Rel];
+    } else if (event_type == IF_Rel) {
+        return event_time > table[instr][IF_Acq];
+    } else if (event_type == ID_Acq) {
+        return (event_time >= table[instr][IF_Rel]) &&
+            (instr == 0 || event_time >= table[instr - 1][ID_Rel]);
+    } else if (event_type == ID_Rel) {
+        return event_time > table[instr][ID_Acq];
+    } else if (event_type == FU_Acq) {
+        // Check that FU_Acq >= ID_Rel
+        if (event_time < table[instr][ID_Rel]) {
+            return false;
+        }
+        // Check data dependencies: all dependencies' FU_Rel <= this FU_Acq
+        const Instr& current = prog[instr];
+        for (int dep : current.data_deps) {
+            if (dep >= 0 && table[dep][FU_Rel] > event_time) {
+                return false;
+            }
+        }
+        
+        for (int i = 0; i < prog.size(); ++i) {
+            if (i == instr) continue;
+            const Instr& other = prog[i];
+            if (other.fu_type == current.fu_type) {
+                // Check if other's FU_Acq <= this FU_Acq < other's FU_Rel
+                int other_acq = table[i][FU_Acq];
+                int other_rel = table[i][FU_Rel];
+                int this_acq = event_time;
+                if (other_acq != -1 && 
+                    other_rel != -1 &&
+                    (other_acq <= this_acq && i < instr ||
+                    other_acq < this_acq && i > instr) && 
+                    this_acq < other_rel) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    } else if (event_type == FU_Rel) {
+        return event_time == table[instr][FU_Acq] + prog[instr].lat_fu;
+    } else if (event_type == Event_COM) {
+        return (event_time >= table[instr][FU_Rel]) &&
+            (instr == 0 || event_time > table[instr - 1][Event_COM]);
+    } else if (event_type == Event_Squashed) {
+        // TODO
+    }
+    return true;
+}
+
+int EventTable::resolution_step(const std::vector<Instr>& prog) {
+    int conflict_count = 0;
+    std::vector<std::tuple<int, int, int>> updates; // (instr, event_type, new_time)
+
+    for (int instr = 0; instr < table.size(); ++instr) {
+        for (int event_type = 0; event_type < EVENT_NUM; ++event_type) {
+            int current_time = table[instr][event_type];
+            if (current_time == -1) continue;
+            int new_time = 0;
+            while (!check_constraints(prog, instr, event_type, new_time)) {
+                ++new_time;
+            }
+            if (new_time != current_time) {
+                ++conflict_count;
+                updates.emplace_back(instr, event_type, new_time);
+            }
+        }
+    }
+
+    // Apply all updates at once
+    for (const auto& upd : updates) {
+        int instr, event_type, new_time;
+        std::tie(instr, event_type, new_time) = upd;
+        table[instr][event_type] = new_time;
+    }
+
+    return conflict_count;
 }
