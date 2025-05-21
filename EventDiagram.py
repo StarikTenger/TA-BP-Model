@@ -133,9 +133,9 @@ def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None)
                 draw_event(ax, plot_time, instr_idx, headers[event_idx], color)
 
                 # Encircle if this event will change in the next frame
-                if will_change and (instr_idx, event_idx) in will_change:
-                    circle = mpatches.Circle((plot_time, instr_idx), 0.35, fill=False, color='crimson', linewidth=2, zorder=20)
-                    ax.add_patch(circle)
+                # if will_change and (instr_idx, event_idx) in will_change:
+                #     circle = mpatches.Circle((plot_time, instr_idx), 0.35, fill=False, color='crimson', linewidth=2, zorder=20)
+                #     ax.add_patch(circle)
 
     ax.set_yticks(range(num_instr))
     ax.set_yticklabels([f'Instr {i+1}' for i in range(num_instr)])
@@ -208,21 +208,24 @@ def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None)
             x_shift = (level - 0.5) * 0.12  # 0.12 is a small horizontal offset per level
             shifted_from_time = from_time + x_shift
 
-            if "_a" in label:
+            # Keep y_from aligned with the instruction row (not shifted)
+            y_event = base_y_from
+
+            if "_r" in label:
                 ax.annotate(
-                    '', xy=(shifted_from_time, y_from + 0.4), xytext=(shifted_from_time, y_from - 0.4),
+                    '', xy=(shifted_from_time, y_event + 0.4), xytext=(shifted_from_time, y_event - 0.4),
                     arrowprops=dict(arrowstyle='-|>', color=prev_color, lw=2, linestyle='dotted', alpha=0.7, shrinkA=0, shrinkB=0),
                     zorder=9
                 )
-            elif "_r" in label:
+            elif "_a" in label:
                 ax.annotate(
-                    '', xy=(shifted_from_time, y_from - 0.4), xytext=(shifted_from_time, y_from + 0.4),
+                    '', xy=(shifted_from_time, y_event - 0.4), xytext=(shifted_from_time, y_event + 0.4),
                     arrowprops=dict(arrowstyle='-|>', color=prev_color, lw=2, linestyle='dotted', alpha=0.7, shrinkA=0, shrinkB=0),
                     zorder=9
                 )
             else:
-                ax.vlines(shifted_from_time, y_from - 0.4, y_from + 0.4, color=prev_color, linestyle='dotted', linewidth=2, alpha=0.7, zorder=9)
-            ax.text(shifted_from_time, y_from + 0.45, label, rotation=90, va='bottom', ha='center', fontsize=8, color=prev_color, alpha=0.7, zorder=9)
+                ax.vlines(shifted_from_time, y_event - 0.4, y_event + 0.4, color=prev_color, linestyle='dotted', linewidth=2, alpha=0.7, zorder=9)
+            ax.text(shifted_from_time, y_event + 0.45, label, rotation=90, va='bottom', ha='center', fontsize=8, color=prev_color, alpha=0.7, zorder=9)
 
 def find_changes_between_frames(headers, data_prev, data_next):
     """Finds changes between two frames and returns a list of arrows to draw and a set of events that will change."""
