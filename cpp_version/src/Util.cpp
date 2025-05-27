@@ -114,8 +114,8 @@ bool MaskGenerator::next() {
         // Try next aux_mask
         if (!next_aux()) {
             ++level;
-            if (level > free_count) return false;
             update_aux();
+            if (level > free_count) return false;
             continue;
         }
 
