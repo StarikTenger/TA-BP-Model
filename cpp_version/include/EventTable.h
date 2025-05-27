@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <set>
+#include <tuple>
 
 enum EventType {
     IF_Acq = 0,
@@ -18,10 +19,18 @@ enum EventType {
     EVENT_NUM // A count of the events
 };
 
+struct Event {
+    int instr;
+    int type;
+
+    bool operator<(const Event& other) const;
+};
 
 struct EventTable {
     // (Instruction -> EventType -> TimeStamp) mapping
     std::vector<std::vector<int>> table;
+    std::vector<std::tuple<int, int, int>> last_update_reversed;
+    std::vector<std::map<Event, std::set<std::set<Event>>>> graph;
 
     EventTable(int numInstructions = 0);
 
@@ -34,9 +43,7 @@ struct EventTable {
     void fromProg(const std::vector<Instr>& prog);
 
     void print() const;
-
-    bool check_constraints(const std::vector<Instr>& prog, int instr, int event_type, int event_time);
-
+    
     // Returns the number of event moved
     int resolution_step(const std::vector<Instr>& prog);
 };

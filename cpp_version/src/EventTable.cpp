@@ -1,7 +1,12 @@
 #include "EventTable.h"
 #include "TraceDiagonal.h"
+#include "Util.h"
 
 using namespace std;
+
+bool Event::operator<(const Event& other) const {
+    return std::tie(instr, type) < std::tie(other.instr, other.type);
+}
 
 EventTable::EventTable(int numInstructions) {
     table.resize(numInstructions, vector<int>(EVENT_NUM, -1));
@@ -56,8 +61,35 @@ void EventTable::fromProg(const std::vector<Instr>& prog) {
 }
 
 void EventTable::print() const {
+
+    // Map event types to names
+    static const std::map<int, std::string> event_names = {
+        {IF_Acq, "IF_a"}, {IF_Rel, "IF_r"},
+        {ID_Acq, "ID_a"}, {ID_Rel, "ID_r"},
+        {FU_Acq, "FU_a"}, {FU_Rel, "FU_r"},
+        {Event_COM, "COM"}, {Event_Squashed, "Sq"}
+    };
+
+    if (!graph.empty()) {
+        for (const auto& entry : graph.back()) {
+            // Print dependency sets
+            for (const auto& dep_set : entry.second) {
+                std::cout << "{";
+                bool first = true;
+                for (const auto& ev : dep_set) {
+                    if (!first) std::cout << ", ";
+                    std::cout << "[" << ev.instr + 1 << ", " << event_names.at(ev.type) << "]";
+                    first = false;
+                }
+                std::cout << "}";
+            }
+            // Print arrow and target event
+            std::cout << " -> [" << entry.first.instr + 1 << ", " << event_names.at(entry.first.type) << "]" << std::endl;
+        }
+    }
+
     std::cout << "   IF_a\tIF_r\tID_a\tID_r\tFU_a\tFU_r\tCOM\tSq" << std::endl;
-    for (int i = 0; i < table.size(); i++) {
+    for (int i = 0; i < table.size(); i++) { 
         std::cout << i + 1 << ": ";
         for (int j = 0; j < EVENT_NUM; j++) {
             std::cout << table[i][j] << "\t";
@@ -66,7 +98,7 @@ void EventTable::print() const {
     }
 }
 
-bool EventTable::check_constraints(const std::vector<Instr>& prog, int instr, int event_type, int event_time) {
+bool check_constraints(const std::vector<std::vector<int>>& table, const std::vector<Instr>& prog, int instr, int event_type, int event_time) {
     if (event_type == IF_Acq) {
         if (instr == 0) return true;
         return table[instr - 1][IF_Rel] == -1 || event_time >= table[instr - 1][IF_Rel];
@@ -119,6 +151,26 @@ bool EventTable::check_constraints(const std::vector<Instr>& prog, int instr, in
     return true;
 }
 
+int where_event(const std::vector<Instr>& prog, Event event, const vector<vector<int>>& table, 
+    const vector<tuple<int, int, int>>& upd_reversed, const vector<bool>& mask) 
+{
+    std::vector<std::vector<int>> new_table = table;
+    for (size_t i = 0; i < upd_reversed.size(); ++i) {
+        if (!mask[i]) {
+            int instr, event_type, new_time;
+            std::tie(instr, event_type, new_time) = upd_reversed[i];
+            new_table[instr][event_type] = new_time;
+        }
+    }
+
+    int new_time = 0;
+    while (!check_constraints(new_table, prog, event.instr, event.type, new_time)) {
+        ++new_time;
+    }
+    return new_time;
+
+}
+
 int EventTable::resolution_step(const std::vector<Instr>& prog) {
     int conflict_count = 0;
     std::vector<std::tuple<int, int, int>> updates; // (instr, event_type, new_time)
@@ -128,7 +180,7 @@ int EventTable::resolution_step(const std::vector<Instr>& prog) {
             int current_time = table[instr][event_type];
             if (current_time == -1) continue;
             int new_time = 0;
-            while (!check_constraints(prog, instr, event_type, new_time)) {
+            while (!check_constraints(table, prog, instr, event_type, new_time)) {
                 ++new_time;
             }
             if (new_time != current_time) {
@@ -138,10 +190,42 @@ int EventTable::resolution_step(const std::vector<Instr>& prog) {
         }
     }
 
+    graph.push_back({});
+
+    if (last_update_reversed.size()) {
+        for (const auto& upd : updates) {
+            int instr, event_type, new_time;
+            std::tie(instr, event_type, new_time) = upd;
+
+            MaskGenerator mask_gen(last_update_reversed.size());
+            do {
+                int time = where_event(prog, {instr, event_type}, table, last_update_reversed, mask_gen.get_mask());
+                if (time == new_time) {
+                    Event update_event{instr, event_type};
+                    std::set<Event> events_from_mask;
+                    for (size_t i = 0; i < last_update_reversed.size(); ++i) {
+                        if (mask_gen.get_mask()[i]) {
+                            int dep_instr, dep_event_type, dep_time;
+                            std::tie(dep_instr, dep_event_type, dep_time) = last_update_reversed[i];
+                            events_from_mask.insert(Event{dep_instr, dep_event_type});
+                        }
+                    }
+                    if (graph.back().find(update_event) == graph.back().end()) {
+                        graph.back()[update_event] = {};
+                    }
+                    graph.back()[update_event].insert(events_from_mask);
+                    mask_gen.restrict_last();
+                }
+            } while (mask_gen.next());
+        }
+    }
+
+    last_update_reversed.clear();
     // Apply all updates at once
     for (const auto& upd : updates) {
         int instr, event_type, new_time;
         std::tie(instr, event_type, new_time) = upd;
+        last_update_reversed.emplace_back(instr, event_type, table[instr][event_type]);
         table[instr][event_type] = new_time;
     }
 
