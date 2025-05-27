@@ -19,15 +19,9 @@ public:
     bool next();
 private:
     std::vector<bool> mask;
-    std::vector<bool> restriction;
-    std::vector<bool> pending_restriction; 
+    std::vector<std::vector<bool>> restrictions;
     int level = 1;
-
-    // Auxiliary fields for enumeration
-    std::vector<bool> aux_mask;
-    int free_count = 0;
     bool first = true;
-    void update_aux();
-    bool next_aux();
-    void map_aux_to_mask();
+
+    void init_level(); // helper to initialize mask for current level
 };
