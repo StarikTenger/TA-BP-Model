@@ -58,6 +58,11 @@ def parse_tables_and_deps_from_file(filepath):
                             table.append([])
                 last_idx = cur_idx
                 table.append(parts)
+                
+            # Remove empty elements from the end of each row
+            for row in table:
+                while row and (not row[-1].strip()):
+                    row.pop()
             max_cols = max((len(row) for row in table), default=0)
             for row in table:
                 while len(row) < max_cols:
@@ -83,7 +88,32 @@ start_y_offset = 0  # Track vertical offset for each table
 
 tables = list(reversed(tables))
 
+style_table = {
+    "IF": "fillColor=#fff2cc;",
+    "ID": "fillColor=#ffe6cc;",
+    "FU1": "fillColor=#d5e8d4;",
+    "FU2": "fillColor=#dae8fc;",
+    "COM": "fillColor=#fff2cc;",
+    "rs": "fontStyle=2;",
+    "rs1": "fontStyle=2;",
+    "rs2": "fontStyle=2;",
+    "rob": "fontStyle=2;",
+    "#squashed": "fillColor=#f8cecc;",
+}
+
+label_style = "fontSize=30;rounded=0;fillColor=none;strokeColor=none;dashed=1;align=center;verticalAlign=bottom;fontFamily=Times New Roman;"
+
+label_substyles = [
+    "fontColor=light-dark(#00bfff, #ededed);",
+    "fontColor=light-dark(#FF0303,#EDEDED);"
+]
+
+labels = ["α", "β", "α'", "β'"]
+
+table_num = -1
 for table in tables:
+    table_num += 1
+
     row_offsets = []
     for row in table:
         for col_idx, cell in enumerate(row):
@@ -98,6 +128,17 @@ for table in tables:
     cell_height = 30
     start_x = 100
     start_y = 100 + start_y_offset  # Offset each table vertically
+
+    # Draw table label
+    table_label = drawpyo.diagram.Object(
+        page=page,
+        value=labels[table_num % len(labels)]
+    )
+    table_label.geometry.width = cell_height
+    table_label.geometry.height = cell_height
+    table_label.position = (start_x - cell_height, start_y - table_label.geometry.height)
+    table_label.apply_style_string(label_style + label_substyles[table_num % len(label_substyles)])
+
 
     column_labels = []
 
@@ -146,19 +187,6 @@ for table in tables:
                 jettySize=15,
                 waypoints="curved",
             )
-
-    style_table = {
-        "IF": "fillColor=#fff2cc;",
-        "ID": "fillColor=#ffe6cc;",
-        "FU1": "fillColor=#d5e8d4;",
-        "FU2": "fillColor=#dae8fc;",
-        "COM": "fillColor=#fff2cc;",
-        "rs": "fontStyle=2;",
-        "rs1": "fontStyle=2;",
-        "rs2": "fontStyle=2;",
-        "rob": "fontStyle=2;",
-        "#squashed": "fillColor=#f8cecc;",
-    }
 
     # Draw table cells
     for row_idx, row in enumerate(table):
