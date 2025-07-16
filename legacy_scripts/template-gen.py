@@ -1,3 +1,5 @@
+# Generate TLA configuration from input file
+
 import re
 import sys
 import argparse

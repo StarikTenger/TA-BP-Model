@@ -1,3 +1,5 @@
+# Converts input into pretty latex table
+
 import re
 import sys
 import string
