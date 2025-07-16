@@ -93,11 +93,12 @@ style_table = {
     "ID": "fillColor=#ffe6cc;",
     "FU1": "fillColor=#d5e8d4;",
     "FU2": "fillColor=#dae8fc;",
+    "FU3": "fillColor=#e1d5e7;",
     "COM": "fillColor=#fff2cc;",
     "rs": "fontStyle=2;",
-    "rs1": "fontStyle=2;",
-    "rs2": "fontStyle=2;",
-    "rob": "fontStyle=2;",
+    "rs1": "fontStyle=2;fontColor=#C1C1C1;",
+    "rs2": "fontStyle=2;fontColor=#C1C1C1;",
+    "rob": "fontStyle=2;fontColor=#C1C1C1;",
     "#squashed": "fillColor=#f8cecc;",
 }
 
