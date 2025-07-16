@@ -13,7 +13,7 @@
 #include <cstdlib>
 
 const int SUPERSCALAR = 1;
-const int FU_NUM = 2;
+const int FU_NUM = 4;
 
 struct StageEntry
 {

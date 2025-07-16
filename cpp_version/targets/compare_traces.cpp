@@ -44,4 +44,15 @@ int main(int argc, char *argv[])
     cout << endl;
 
     cout << trace_diag_alt.serizlize();
+
+    cout << endl;
+    cout << "Deps:" << endl;
+
+    for (int i = 0; i < prog.size(); i++) {
+        for (auto dep : prog[i].data_deps) {
+            if (dep < i) {
+                cout << dep + 1 << " -> " << i + 1 << endl;
+            }
+        }
+    }
 }

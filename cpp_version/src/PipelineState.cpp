@@ -110,7 +110,6 @@ bool PipelineState::next(const vector<Instr> &prog)
 
             if (prog[stage_FU[i].idx].mispred_region && !prog[stage_FU[i].idx].br_pred) {
                 branch_stack.pop_back();
-                cerr << "BR POP\n";
             }
 
             executed.insert(stage_FU[i].idx);
@@ -227,7 +226,6 @@ bool PipelineState::next(const vector<Instr> &prog)
 
             if (prog[stage_ID[i]].mispred_region && !prog[stage_ID[i]].br_pred) {
                 branch_stack.push_back(stage_ID[i]);
-                cerr << "BR PUSH\n";
             }
         }
     }
@@ -258,16 +256,16 @@ bool PipelineState::next(const vector<Instr> &prog)
             }
         }
     } else {
-        cerr << "Stalling\n";
+        // cerr << "Stalling\n";
     }
 
     clock_cycle++;
 
-    cerr << clock_cycle << ": ";
-    for (auto n : branch_stack) {
-        cerr <<  n << " ";
-    }
-    cerr << endl;
+    // cerr << clock_cycle << ": ";
+    // for (auto n : branch_stack) {
+    //     cerr <<  n << " ";
+    // }
+    // cerr << endl;
 
     return completed >= (int)prog.size() - 1;
 }

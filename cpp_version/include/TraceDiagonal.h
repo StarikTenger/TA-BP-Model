@@ -29,6 +29,8 @@ public:
 
     int length_cc() const;
 
+    bool operator<(const TraceDiagonal& other) const;
+
 private:
     
     struct Row {

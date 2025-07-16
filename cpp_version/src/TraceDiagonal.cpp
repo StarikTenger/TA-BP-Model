@@ -140,3 +140,21 @@ int TraceDiagonal::length_cc() const
 {
     return table.back().res.size() + table.back().offset;
 }
+
+bool TraceDiagonal::operator<(const TraceDiagonal& other) const {
+    if (table.size() != other.table.size())
+        return table.size() < other.table.size();
+    for (size_t i = 0; i < table.size(); ++i) {
+        if (table[i].offset != other.table[i].offset)
+            return table[i].offset < other.table[i].offset;
+        const auto& res1 = table[i].res;
+        const auto& res2 = other.table[i].res;
+        if (res1.size() != res2.size())
+            return res1.size() < res2.size();
+        for (size_t j = 0; j < res1.size(); ++j) {
+            if (res1[j] != res2[j])
+                return res1[j] < res2[j];
+        }
+    }
+    return false;
+}

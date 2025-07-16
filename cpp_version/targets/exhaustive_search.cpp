@@ -1,4 +1,5 @@
 #include "PipelineState.h"
+#include "TraceDiagonal.h"
 
 #include <iostream>
 #include <vector>
@@ -8,6 +9,8 @@
 #include <deque>
 #include <fstream>
 #include <sstream>
+#include <chrono>
+#include <unordered_set>
 
 using namespace std;
 
@@ -76,13 +79,21 @@ bool deps_next(vector<pair<int, int>>& deps, int prog_len)
     return false;
 }
 
+
+
 void total_search_TA() 
 {
-    int size = 3;
-    vector<int> types(size);
-    vector<int> type_bounds(size, FU_NUM - 1);
+    using namespace std::chrono;
+    auto start = high_resolution_clock::now();
+    int TA_counter = 0;
+
+    unordered_set<string> explored_TAs;
+
+    int size = 4;
+    int mispred_size = 4;
+    vector<int> types(size + mispred_size);
+    vector<int> type_bounds(size + mispred_size, FU_NUM - 1);
     vector<int> fu_lats = {4, 4};
-    int mispred_size = 20;
     int count = 0;
 
     do {
@@ -101,11 +112,12 @@ void total_search_TA()
                     prog.push_back(instr);
                 }
                 prog[before_spec - 1].lat_fu = 1;
+                prog[before_spec - 1].fu_type = 0;
                 prog[before_spec - 1].mispred_region = mispred_size;
 
                 for (int i = 0; i < mispred_size; i++) {
                     Instr instr;
-                    instr.fu_type = 0;
+                    instr.fu_type = types[size + i];
                     instr.lat_fu = fu_lats[instr.fu_type];
                     instr.mispred_region = 0;
 
@@ -135,6 +147,11 @@ void total_search_TA()
                 }
 
                 if (has_TA(prog)) {
+                    string serialized = TraceDiagonal(prog).serizlize();
+                    if (explored_TAs.find(serialized) != explored_TAs.end()) {
+                        continue; // Skip already explored trace
+                    }
+
                     cerr << "Found a timing anomaly" << endl;
 
                     misprediction_on(prog);
@@ -142,16 +159,24 @@ void total_search_TA()
 
                     print_program(prog);
 
-                    dump_pair_of_traces(prog, "out1.tmp", "out2.tmp");
+                    explored_TAs.insert(serialized);
+                    cerr << "Trace Diagonal:\n" << TraceDiagonal(prog).serizlize() << endl;
 
-                    return;
+                    // dump_pair_of_traces(prog, "out1.tmp", "out2.tmp");
+
+                    // return;
+
+                    TA_counter++;
                 }
 
             }
         } while (deps_next(deps, size));
     } while (vector_next(types, type_bounds));
     
-    cout << "Checked " << count << " programs. No TA found" << endl;
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(end - start).count();
+    cout << "Checked " << count << " programs. Found " << TA_counter << " TAs" << endl;
+    cout << "Elapsed time: " << duration << " ms" << endl;
 }
 
 int main(int argc, char *argv[]) 

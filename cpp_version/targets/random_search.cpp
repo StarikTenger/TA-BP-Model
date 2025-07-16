@@ -114,18 +114,21 @@ bool has_TA2(vector<Instr>& prog)
 void random_search_TA() 
 {
     int iterations = 10000000;
-    int size = 6;
+    int size = 4;
     for (int i = 0; i < iterations; i++) {
         vector<Instr> prog = random_program(size);
         PipelineState state;
         
-        if (has_TA2(prog)) {
+        if (has_TA(prog)) {
             cerr << "Found a timing anomaly" << endl;
+            misprediction_on(prog);
+            remove_unused(prog);
 
+            misprediction_off(prog);
             print_program(prog);
 
             misprediction_on(prog);
-            remove_unused(prog);
+            
 
             dump_pair_of_traces(prog, "out1.tmp", "out2.tmp");
 
