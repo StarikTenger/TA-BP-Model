@@ -7,6 +7,9 @@ int random_int(int min, int max);
 
 bool next_mask(std::vector<bool>& mask);
 
+/*
+ * Bit mask generator used for ??? //TODO
+ */
 class MaskGenerator {
 public:
     MaskGenerator(int size);
