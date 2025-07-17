@@ -145,29 +145,6 @@ void misprediction_off(vector<Instr>& prog)
     }
 }
 
-string dump_trace(const vector<Instr>& prog) 
-{
-    stringstream trace;
-
-    PipelineState state;
-    state.clock_cycle = 0;
-    state.pc = 0;
-
-    for (int i = 0; i < 100; i++) {
-        trace << "State " << state.clock_cycle << ":\n";
-        trace << state.formatted_string();
-        trace << "\n";
-
-        if (state.next(prog)) {
-            break;
-        }
-        
-        state.clock_cycle++;
-    }
-
-    return trace.str();
-}
-
 bool has_TA(vector<Instr>& prog)
 {
     misprediction_on(prog);
@@ -243,6 +220,29 @@ void remove_unused(vector<Instr>& prog)
 
         
     }
+}
+
+string dump_trace(const vector<Instr>& prog) 
+{
+    stringstream trace;
+
+    PipelineState state;
+    state.clock_cycle = 0;
+    state.pc = 0;
+
+    for (int i = 0; i < 100; i++) {
+        trace << "State " << state.clock_cycle << ":\n";
+        trace << state.formatted_string();
+        trace << "\n";
+
+        if (state.next(prog)) {
+            break;
+        }
+        
+        state.clock_cycle++;
+    }
+
+    return trace.str();
 }
 
 void dump_pair_of_traces(vector<Instr> prog, std::string filename1, std::string filename2)
