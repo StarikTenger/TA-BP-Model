@@ -5,35 +5,71 @@ import matplotlib.patches as mpatches
 
 def parse_input_frames():
     content = sys.stdin.read()
-    # Split meta and tables
-    meta, *table_frames = content.strip().split('\n\n', 1)
-    if table_frames:
-        tables = table_frames[0]
-        rest_frames = tables.split('\n\n')
+    # Split content into metainfo and lines
+    if "\n\n" in content:
+        metainfo, lines_part = content.split("\n\n", 1)
     else:
-        rest_frames = []
-    # Parse meta
+        metainfo, lines_part = "", content
+    lines = [l for l in lines_part.splitlines() if l.strip() != ""]
+    dep_pattern = re.compile(r'\{\s*\[(\d+),\s*([^\]]+)\]\s*\}\s*->\s*\[(\d+),\s*([^\]]+)\]')
+    table_header_pattern = re.compile(r'^\s*IF_a\b')
+    table_row_pattern = re.compile(r'^\d+:')
+    fu_map_pattern = re.compile(r'^FU\d+')
+
+    frames = []
+    dependencies_per_frame = []
     fu_map = []
-    for line in meta.strip().splitlines():
+
+    i = 0
+    # Parse FU map if present
+    for line in metainfo.strip().splitlines():
         m = re.search(r'FU(\d+)', line)
         if m:
             fu_map.append(int(m.group(1)))
+
+
+    while i < len(lines):
+        # Collect dependencies for this frame
+        deps = []
+        while i < len(lines) and dep_pattern.match(lines[i]):
+            m = dep_pattern.match(lines[i])
+            if m:
+                from_instr, from_event, to_instr, to_event = m.groups()
+                # Convert to 0-based indices
+                deps.append((int(from_instr)-1, from_event.strip(), int(to_instr)-1, to_event.strip()))
+            i += 1
+
+        # Skip empty lines
+        while i < len(lines) and lines[i].strip() == "":
+            i += 1
+
+        # Parse table header
+        if i < len(lines) and table_header_pattern.search(lines[i]):
+            headers = lines[i].split()
+            i += 1
         else:
-            fu_map.append(None)
-    # Parse tables
-    parsed = []
-    for frame in rest_frames:
-        lines = [line.strip() for line in frame.splitlines() if line.strip()]
-        if not lines:
-            continue
-        headers = lines[0].split()
+            break  # No more tables
+
+        # Parse table rows
         data = []
-        for line in lines[1:]:
-            parts = line.split(':', 1)[-1].strip().split()
-            row = [int(x) for x in parts]
+        while i < len(lines) and table_row_pattern.match(lines[i]):
+            row = [int(x) for x in lines[i].split(':', 1)[-1].strip().split()]
             data.append(row)
-        parsed.append((headers, data))
-    return fu_map, parsed
+            i += 1
+
+        frames.append((headers, data))
+        dependencies_per_frame.append(deps)
+
+        # Skip any empty lines before next block
+        while i < len(lines) and lines[i].strip() == "":
+            i += 1
+
+    # Infer fu_map from number of instructions in first frame if not parsed
+    if frames and not fu_map:
+        n_instr = len(frames[0][1])
+        fu_map = [1 for i in range(n_instr)]  # fallback: cycle 1,2,3
+
+    return fu_map, frames, dependencies_per_frame
 
 def get_fu_color(fu_num):
     palette = {
@@ -89,7 +125,7 @@ def draw_event(ax, plot_time, instr_idx, label, color):
         ax.vlines(plot_time, instr_idx - 0.4, instr_idx + 0.4, color=color, linewidth=2)
         ax.text(plot_time, instr_idx + 0.45, label, rotation=90, va='bottom', ha='center', fontsize=8, color=color)
 
-def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None):
+def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None, dependencies=None):
     import numpy as np
     num_instr = len(data)
     time_counts = [{time: row.count(time) for time in set(row) if time >= 0} for row in data]
@@ -131,11 +167,6 @@ def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None)
                     plot_time = time
                 color = get_event_color(headers[event_idx], instr_idx, fu_map)
                 draw_event(ax, plot_time, instr_idx, headers[event_idx], color)
-
-                # Encircle if this event will change in the next frame
-                # if will_change and (instr_idx, event_idx) in will_change:
-                #     circle = mpatches.Circle((plot_time, instr_idx), 0.35, fill=False, color='crimson', linewidth=2, zorder=20)
-                #     ax.add_patch(circle)
 
     ax.set_yticks(range(num_instr))
     ax.set_yticklabels([f'Instr {i+1}' for i in range(num_instr)])
@@ -227,6 +258,31 @@ def plot_events(headers, data, ax, fu_map, change_arrows=None, will_change=None)
                 ax.vlines(shifted_from_time, y_event - 0.4, y_event + 0.4, color=prev_color, linestyle='dotted', linewidth=2, alpha=0.7, zorder=9)
             ax.text(shifted_from_time, y_event + 0.45, label, rotation=90, va='bottom', ha='center', fontsize=8, color=prev_color, alpha=0.7, zorder=9)
 
+    # Draw dependency arrows if provided
+    if dependencies and len(dependencies) > 0:
+        print(dependencies)
+        for from_instr, from_event, to_instr, to_event in dependencies:
+            try:
+                from_idx = headers.index(from_event)
+                to_idx = headers.index(to_event)
+                from_time = data[from_instr][from_idx]
+                to_time = data[to_instr][to_idx]
+                if from_time >= 0 and to_time >= 0:
+                    ax.annotate(
+                        '', 
+                        xy=(to_time, to_instr), xytext=(from_time, from_instr),
+                        arrowprops=dict(
+                            arrowstyle='->,head_width=1.0,head_length=1.0',
+                            color='crimson',
+                            lw=2,
+                            alpha=0.7,
+                            linestyle='solid'
+                        ),
+                        zorder=20
+                    )
+            except Exception:
+                continue
+
 def find_changes_between_frames(headers, data_prev, data_next):
     """Finds changes between two frames and returns a list of arrows to draw and a set of events that will change."""
     arrows = []
@@ -242,7 +298,7 @@ def find_changes_between_frames(headers, data_prev, data_next):
                 will_change.add((instr_idx, event_idx))
     return arrows, will_change
 
-def interactive_plot(fu_map, frames):
+def interactive_plot(fu_map, frames, dependencies_per_frame):
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -254,6 +310,8 @@ def interactive_plot(fu_map, frames):
         headers, data = frames[idx]
         change_arrows = None
         will_change = None
+        # Use only dependencies for the current frame
+        dependencies = dependencies_per_frame[idx] if idx < len(dependencies_per_frame) else []
         if idx + 1 < len(frames):
             headers_next, data_next = frames[idx + 1]
             if headers_next == headers and len(data_next) == len(data):
@@ -262,7 +320,7 @@ def interactive_plot(fu_map, frames):
             headers_prev, data_prev = frames[idx-1]
             if headers_prev == headers and len(data_prev) == len(data):
                 change_arrows, _ = find_changes_between_frames(headers, data_prev, data)
-        plot_events(headers, data, ax, fu_map, change_arrows, will_change)
+        plot_events(headers, data, ax, fu_map, change_arrows, will_change, dependencies)
         ax.set_title(f"Event Diagram (Frame {idx+1}/{len(frames)})")
         fig.canvas.draw_idle()
 
@@ -281,5 +339,5 @@ def interactive_plot(fu_map, frames):
     plt.show()
 
 if __name__ == "__main__":
-    fu_map, frames = parse_input_frames()
-    interactive_plot(fu_map, frames)
+    fu_map, frames, dependencies_per_frame = parse_input_frames()
+    interactive_plot(fu_map, frames, dependencies_per_frame)

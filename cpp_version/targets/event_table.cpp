@@ -16,11 +16,11 @@ using namespace std;
 
 int main(int argc, char *argv[]) 
 {
-    // if (argc < 2) {
-    //     cerr << "Usage: " << argv[0] << " <program_file>" << endl;
-    //     return 1;
-    // }
-    string filename = "/home/stariktenger/Internship2025/TA-BP-model/tmp/input.instr";//argv[1];
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " <program_file>" << endl;
+        return 1;
+    }
+    string filename = argv[1];
     vector<Instr> prog = read_program(filename);
     if (prog.empty()) {
         cerr << "No instructions found in the program file." << endl;
