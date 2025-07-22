@@ -1,4 +1,6 @@
-input="tmp/input.instr"
+input=$1
 
-./cpp_version/build/event_table $input >event_table.tmp
+cat $input >event_table.tmp
+./cpp_version/build/event_table $input >>event_table.tmp
 python3 EventDiagram.py <event_table.tmp
+rm event_table.tmp
