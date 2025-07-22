@@ -425,7 +425,7 @@ def draw_graph(edges, lookup_table, page):
             to_x = start_x + (to_coord if isinstance(to_coord, int) else 0) * cell_width + to_offset
             to_y = start_y + (edge['to'][0] - 1) * cell_height
 
-            bullet_size = 4
+            bullet_size = 0
 
             obj_from = drawpyo.diagram.Object(
                 page=page,
@@ -445,17 +445,33 @@ def draw_graph(edges, lookup_table, page):
             obj_to.geometry.height = bullet_size
             obj_to.apply_style_string("shape=ellipse;fillColor=#FF0000;strokeColor=#FF0000;strokeWidth=1;")
 
+
             drawpyo.diagram.Edge(
                 page=page,
                 source=obj_from,
                 target=obj_to,
-                exitX=0,
-                exitY=0,
+                exitX=1,
+                exitY=0.5,
                 entryX=0,
-                entryY=0,
-                waypoints="curved",
-                strokeColor="#FF0000",
+                entryY=0.5,
+                waypoints="straight",
+                shadow=True,
+                strokeWidth=4,
+                strokeColor="#b85450",
             )
+
+def filter_edges(edges):
+    """Filter edges to keep only the last one for each destination."""
+    # Dictionary to store the last edge for each destination
+    dest_to_edge = {}
+    
+    # Process edges in order, later edges will overwrite earlier ones for the same destination
+    for edge in edges:
+        dest = edge['to']
+        dest_to_edge[dest] = edge
+    
+    # Return the filtered edges (only the last one for each destination)
+    return list(dest_to_edge.values())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate drawio diagram from input file.")
@@ -481,6 +497,7 @@ if __name__ == "__main__":
         draw_table(input_file, page)
         print(edges)
         print(lookup_table)
+        edges = filter_edges(edges)
         draw_graph(edges, lookup_table, page)
     else:
         # Use original table drawing from input file
