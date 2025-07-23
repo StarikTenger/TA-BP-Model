@@ -176,6 +176,10 @@ def draw_table(input_file, page):
         # Draw dependency links between instructions based on deps
         for src_idx, tgt_idx in deps:
             if 0 <= src_idx - 1 < len(row_labels) and 0 <= tgt_idx - 1 < len(row_labels):
+                # Set jettySize proportional to vertical distance between source and target
+                vertical_distance = abs(src_idx - tgt_idx) * cell_height
+                jetty_size = int(vertical_distance * 0.5)
+
                 link = drawpyo.diagram.Edge(
                     page=page,
                     source=row_labels[src_idx - 1],
@@ -184,7 +188,7 @@ def draw_table(input_file, page):
                     exitY=0.5,
                     entryX=0,
                     entryY=0.5,
-                    jettySize=15,
+                    jettySize=jetty_size,
                     waypoints="curved",
                 )
 
@@ -295,45 +299,73 @@ def parse_graph_file(filepath):
     if not lines:
         return edges, lookup_table
     
-    # Extract edges from lines like {[3, FU_a]} -> [3, FU_r]
+    # Extract edges from lines like {[3, FU_a]} -> [3, FU_r] or {[2, FU_r], [3, FU_r]} -> [4, FU_a]
     for line in lines:
         line = line.strip()
-        if line.startswith('{') and '->' in line:
-            # Parse edge format: {[row, col]} -> [row, col]
+        if '->' in line and (line.startswith('{') or line.startswith('[')):
+            # Parse edge format: {[row, col]} -> [row, col] or {[row, col], [row, col]} -> [row, col]
             try:
                 # Split on '->'
-                left_part, right_part = line.split('->')
+                left_part, right_part = line.split('->', 1)
                 left_part = left_part.strip()
                 right_part = right_part.strip()
                 
-                # Extract [row, col] from {[row, col]}
-                if left_part.startswith('{[') and left_part.endswith(']}'):
-                    left_content = left_part[2:-2]  # Remove {[ and ]}
-                elif left_part.startswith('[') and left_part.endswith(']'):
-                    left_content = left_part[1:-1]  # Remove [ and ]
-                else:
-                    continue
-                
-                # Extract [row, col] from [row, col]
-                if right_part.startswith('[') and right_part.endswith(']'):
-                    right_content = right_part[1:-1]  # Remove [ and ]
-                else:
-                    continue
-                
-                # Parse row, col from content
-                left_parts = [part.strip() for part in left_content.split(',')]
-                right_parts = [part.strip() for part in right_content.split(',')]
-                
-                if len(left_parts) >= 2 and len(right_parts) >= 2:
-                    # Convert row to int, keep col as string
-                    left_row = int(left_parts[0])
-                    left_col = left_parts[1]
-                    right_row = int(right_parts[0])
-                    right_col = right_parts[1]
+                # Parse sources (can be multiple)
+                sources = []
+                if left_part.startswith('{') and left_part.endswith('}'):
+                    # Multiple sources: {[row, col], [row, col]}
+                    inner_content = left_part[1:-1]  # Remove { and }
+                    # Split by '], [' to get individual coordinate pairs
+                    coord_parts = []
+                    bracket_count = 0
+                    current_part = ""
                     
+                    for char in inner_content:
+                        if char == '[':
+                            bracket_count += 1
+                        elif char == ']':
+                            bracket_count -= 1
+                        current_part += char
+                        
+                        if bracket_count == 0 and char == ']':
+                            if current_part.strip():
+                                coord_parts.append(current_part.strip())
+                            current_part = ""
+                    
+                    for coord_part in coord_parts:
+                        coord_part = coord_part.strip().strip(',').strip()
+                        if coord_part.startswith('[') and coord_part.endswith(']'):
+                            coord_content = coord_part[1:-1]  # Remove [ and ]
+                            parts = [part.strip() for part in coord_content.split(',')]
+                            if len(parts) >= 2:
+                                row = int(parts[0])
+                                col = parts[1]
+                                sources.append((row, col))
+                elif left_part.startswith('[') and left_part.endswith(']'):
+                    # Single source: [row, col]
+                    coord_content = left_part[1:-1]  # Remove [ and ]
+                    parts = [part.strip() for part in coord_content.split(',')]
+                    if len(parts) >= 2:
+                        row = int(parts[0])
+                        col = parts[1]
+                        sources.append((row, col))
+                
+                # Parse destination
+                destination = None
+                if right_part.startswith('[') and right_part.endswith(']'):
+                    coord_content = right_part[1:-1]  # Remove [ and ]
+                    parts = [part.strip() for part in coord_content.split(',')]
+                    if len(parts) >= 2:
+                        row = int(parts[0])
+                        col = parts[1]
+                        destination = (row, col)
+                
+                # Create edges for each source to the destination
+                if sources and destination:
+                    # Create a single edge with multiple sources (multi-edge)
                     edges.append({
-                        'from': (left_row, left_col),
-                        'to': (right_row, right_col)
+                        'from': sources,  # List of sources
+                        'to': destination
                     })
                     
             except (ValueError, IndexError):
@@ -407,65 +439,167 @@ def draw_graph(edges, lookup_table, page):
     start_y = 100
 
     for edge in edges:
-        from_coord = lookup_table.get(edge['from'])
         to_coord = lookup_table.get(edge['to'])
-
-        if from_coord and to_coord:
+        
+        if not to_coord:
+            continue
+            
+        # Handle both single and multi-edges
+        sources = edge['from'] if isinstance(edge['from'], list) else [edge['from']]
+        is_multi = len(sources) > 1
+        
+        if is_multi:
+            # Multi-edge: create invisible junction and draw arrows accordingly
             shift_distance = 15
-
-            # Determine x-offset based on suffix
-            from_col = edge['from'][1]
             to_col = edge['to'][1]
-
-            from_offset = shift_distance if str(from_col).endswith("_a") else (-shift_distance if str(from_col).endswith("_r") else shift_distance)
             to_offset = shift_distance if str(to_col).endswith("_a") else (-shift_distance if str(to_col).endswith("_r") else shift_distance)
-
-            from_x = start_x + (from_coord if isinstance(from_coord, int) else 0) * cell_width + from_offset
-            from_y = start_y + (edge['from'][0] - 1) * cell_height
             to_x = start_x + (to_coord if isinstance(to_coord, int) else 0) * cell_width + to_offset
             to_y = start_y + (edge['to'][0] - 1) * cell_height
+            
+            # Calculate mean position for junction
+            source_positions = []
+            for source in sources:
+                from_coord = lookup_table.get(source)
+                if from_coord:
+                    from_col = source[1]
+                    from_offset = shift_distance if str(from_col).endswith("_a") else (-shift_distance if str(from_col).endswith("_r") else shift_distance)
+                    from_x = start_x + (from_coord if isinstance(from_coord, int) else 0) * cell_width + from_offset
+                    from_y = start_y + (source[0] - 1) * cell_height
+                    source_positions.append((from_x, from_y))
+            
+            if source_positions:
+                # Calculate mean position of sources, then midpoint between mean and destination
+                mean_source_x = sum(pos[0] for pos in source_positions) / len(source_positions)
+                mean_source_y = sum(pos[1] for pos in source_positions) / len(source_positions)
+                junction_x = (mean_source_x + to_x) / 2
+                junction_y = (mean_source_y + to_y) / 2
+                
+                # Create invisible junction object
+                junction_obj = drawpyo.diagram.Object(
+                    page=page,
+                    value=""
+                )
+                junction_obj.position = (junction_x + cell_width // 2 - 5, junction_y + cell_height // 2 - 5)
+                junction_obj.geometry.width = 0
+                junction_obj.geometry.height = 0
+                junction_obj.apply_style_string("fillColor=none;strokeColor=none;")
+                
+                # Create destination object
+                obj_to = drawpyo.diagram.Object(
+                    page=page,
+                    value=""
+                )
+                obj_to.position = (to_x + cell_width // 2 - 5, to_y + cell_height // 2 - 5)
+                obj_to.geometry.width = 0
+                obj_to.geometry.height = 0
+                obj_to.apply_style_string("shape=ellipse;fillColor=#FF0000;strokeColor=#FF0000;strokeWidth=1;")
+                
+                # Draw arrows from each source to junction (no arrowhead)
+                for source in sources:
+                    from_coord = lookup_table.get(source)
+                    if from_coord:
+                        from_col = source[1]
+                        from_offset = shift_distance if str(from_col).endswith("_a") else (-shift_distance if str(from_col).endswith("_r") else shift_distance)
+                        from_x = start_x + (from_coord if isinstance(from_coord, int) else 0) * cell_width + from_offset
+                        from_y = start_y + (source[0] - 1) * cell_height
+                        
+                        obj_from = drawpyo.diagram.Object(
+                            page=page,
+                            value=""
+                        )
+                        obj_from.position = (from_x + cell_width // 2 - 5, from_y + cell_height // 2 - 5)
+                        obj_from.geometry.width = 0
+                        obj_from.geometry.height = 0
+                        obj_from.apply_style_string("shape=ellipse;fillColor=#FF0000;strokeColor=#FF0000;strokeWidth=1;")
+                        
+                        # Arrow from source to junction (no arrowhead)
+                        drawpyo.diagram.Edge(
+                            page=page,
+                            source=obj_from,
+                            target=junction_obj,
+                            exitX=1,
+                            exitY=0.5,
+                            entryX=0,
+                            entryY=0.5,
+                            waypoints="straight",
+                            shadow=True,
+                            strokeWidth=4,
+                            strokeColor="#b85450",
+                            line_end_target="none"
+                        )
+                
+                # Arrow from junction to destination (with arrowhead)
+                drawpyo.diagram.Edge(
+                    page=page,
+                    source=junction_obj,
+                    target=obj_to,
+                    exitX=1,
+                    exitY=0.5,
+                    entryX=0,
+                    entryY=0.5,
+                    waypoints="straight",
+                    shadow=True,
+                    strokeWidth=4,
+                    strokeColor="#b85450"
+                )
+        else:
+            # Single edge: use original logic
+            source = sources[0]
+            from_coord = lookup_table.get(source)
+            
+            if from_coord and to_coord:
+                shift_distance = 15
 
-            bullet_size = 0
+                # Determine x-offset based on suffix
+                from_col = source[1]
+                to_col = edge['to'][1]
 
-            obj_from = drawpyo.diagram.Object(
-                page=page,
-                value=""
-            )
-            obj_from.position = (from_x + cell_width // 2 - 5, from_y + cell_height // 2 - 5)
-            obj_from.geometry.width = bullet_size
-            obj_from.geometry.height = bullet_size
-            obj_from.apply_style_string("shape=ellipse;fillColor=#FF0000;strokeColor=#FF0000;strokeWidth=1;")
+                from_offset = shift_distance if str(from_col).endswith("_a") else (-shift_distance if str(from_col).endswith("_r") else shift_distance)
+                to_offset = shift_distance if str(to_col).endswith("_a") else (-shift_distance if str(to_col).endswith("_r") else shift_distance)
 
-            obj_to = drawpyo.diagram.Object(
-                page=page,
-                value=""
-            )
-            obj_to.position = (to_x + cell_width // 2 - 5, to_y + cell_height // 2 - 5)
-            obj_to.geometry.width = bullet_size
-            obj_to.geometry.height = bullet_size
-            obj_to.apply_style_string("shape=ellipse;fillColor=#FF0000;strokeColor=#FF0000;strokeWidth=1;")
+                from_x = start_x + (from_coord if isinstance(from_coord, int) else 0) * cell_width + from_offset
+                from_y = start_y + (source[0] - 1) * cell_height
+                to_x = start_x + (to_coord if isinstance(to_coord, int) else 0) * cell_width + to_offset
+                to_y = start_y + (edge['to'][0] - 1) * cell_height
 
+                obj_from = drawpyo.diagram.Object(
+                    page=page,
+                    value=""
+                )
+                obj_from.position = (from_x + cell_width // 2 - 5, from_y + cell_height // 2 - 5)
+                obj_from.geometry.width = 0
+                obj_from.geometry.height = 0
+                obj_from.apply_style_string("shape=ellipse;fillColor=#FF0000;strokeColor=#FF0000;strokeWidth=1;")
 
-            drawpyo.diagram.Edge(
-                page=page,
-                source=obj_from,
-                target=obj_to,
-                exitX=1,
-                exitY=0.5,
-                entryX=0,
-                entryY=0.5,
-                waypoints="straight",
-                shadow=True,
-                strokeWidth=4,
-                strokeColor="#b85450",
-            )
+                obj_to = drawpyo.diagram.Object(
+                    page=page,
+                    value=""
+                )
+                obj_to.position = (to_x + cell_width // 2 - 5, to_y + cell_height // 2 - 5)
+                obj_to.geometry.width = 0
+                obj_to.geometry.height = 0
+                obj_to.apply_style_string("shape=ellipse;fillColor=#FF0000;strokeColor=#FF0000;strokeWidth=1;")
+
+                drawpyo.diagram.Edge(
+                    page=page,
+                    source=obj_from,
+                    target=obj_to,
+                    exitX=1,
+                    exitY=0.5,
+                    entryX=0,
+                    entryY=0.5,
+                    waypoints="straight",
+                    shadow=True,
+                    strokeWidth=4,
+                    strokeColor="#b85450"
+                )
 
 def filter_edges(edges):
-    """Filter edges to keep only the last one for each destination."""
+    """Filter edges to keep only the last one for each destination, removing all previous edges with same destination."""
     # Dictionary to store the last edge for each destination
     dest_to_edge = {}
     
-    # Process edges in order, later edges will overwrite earlier ones for the same destination
+    # Process edges in order, later edges will completely replace earlier ones for the same destination
     for edge in edges:
         dest = edge['to']
         dest_to_edge[dest] = edge
@@ -497,7 +631,7 @@ if __name__ == "__main__":
         draw_table(input_file, page)
         print(edges)
         print(lookup_table)
-        edges = filter_edges(edges)
+        edges = filter_edges(edges) # Filter edges to keep only the last one for each destination
         draw_graph(edges, lookup_table, page)
     else:
         # Use original table drawing from input file
