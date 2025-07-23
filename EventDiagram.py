@@ -11,10 +11,12 @@ def parse_input_frames():
     else:
         metainfo, lines_part = "", content
     lines = [l for l in lines_part.splitlines() if l.strip() != ""]
-    dep_pattern = re.compile(r'\{\s*\[(\d+),\s*([^\]]+)\]\s*\}\s*->\s*\[(\d+),\s*([^\]]+)\]')
+    # Pattern to match multi-dependencies: {[2, FU_r], [3, FU_r]} -> [4, FU_a] or {[2, FU_r]}{[3, FU_r]} -> [4, FU_a]
+    multi_dep_pattern = re.compile(r'\{([^\}]+)\}\s*->\s*\[(\d+),\s*([^\]]+)\]')
+    # Pattern to extract individual dependencies from the source part
+    source_dep_pattern = re.compile(r'\[\s*(\d+),\s*([^\]]+)\s*\]')
     table_header_pattern = re.compile(r'^\s*IF_a\b')
     table_row_pattern = re.compile(r'^\d+:')
-    fu_map_pattern = re.compile(r'^FU\d+')
 
     frames = []
     dependencies_per_frame = []
@@ -31,12 +33,19 @@ def parse_input_frames():
     while i < len(lines):
         # Collect dependencies for this frame
         deps = []
-        while i < len(lines) and dep_pattern.match(lines[i]):
-            m = dep_pattern.match(lines[i])
+        while i < len(lines) and multi_dep_pattern.match(lines[i]):
+            m = multi_dep_pattern.match(lines[i])
             if m:
-                from_instr, from_event, to_instr, to_event = m.groups()
-                # Convert to 0-based indices
-                deps.append((int(from_instr)-1, from_event.strip(), int(to_instr)-1, to_event.strip()))
+                sources_part, to_instr, to_event = m.groups()
+                to_instr = int(to_instr) - 1  # Convert to 0-based
+                to_event = to_event.strip()
+                
+                # Extract all source dependencies
+                source_matches = source_dep_pattern.findall(sources_part)
+                for from_instr, from_event in source_matches:
+                    from_instr = int(from_instr) - 1  # Convert to 0-based
+                    from_event = from_event.strip()
+                    deps.append((from_instr, from_event, to_instr, to_event))
             i += 1
 
         # Skip empty lines
@@ -47,7 +56,10 @@ def parse_input_frames():
         if i < len(lines) and table_header_pattern.search(lines[i]):
             headers = lines[i].split()
             i += 1
+            print(i)
         else:
+            print(lines[i])
+            print("BREAK")
             break  # No more tables
 
         # Parse table rows
@@ -68,6 +80,8 @@ def parse_input_frames():
     if frames and not fu_map:
         n_instr = len(frames[0][1])
         fu_map = [1 for i in range(n_instr)]  # fallback: cycle 1,2,3
+
+    print(len(frames), "frames parsed")
 
     return fu_map, frames, dependencies_per_frame
 

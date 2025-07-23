@@ -82,9 +82,10 @@ void EventTable::print() const {
                     first = false;
                 }
                 std::cout << "}";
+                // Print arrow and target event
+                std::cout << " -> [" << entry.first.instr + 1 << ", " << event_names.at(entry.first.type) << "]" << std::endl;
             }
-            // Print arrow and target event
-            std::cout << " -> [" << entry.first.instr + 1 << ", " << event_names.at(entry.first.type) << "]" << std::endl;
+            
         }
     }
 
