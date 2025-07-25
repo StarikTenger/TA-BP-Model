@@ -1,5 +1,6 @@
 #include "PipelineState.h"
 #include "TraceDiagonal.h"
+#include "EventTable.h"
 
 #include <iostream>
 #include <vector>

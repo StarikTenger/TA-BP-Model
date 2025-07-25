@@ -274,3 +274,73 @@ void dump_pair_of_traces(vector<Instr> prog, std::string filename1, std::string 
         }
     }
 }
+
+
+vector<Instr> random_program(RandomProgConfig conf) {
+    // Resolve random configuration
+    int size = conf.size.random_element();
+    bool mispred_region_on = conf.mispred_region.random_element();
+    vector<int> fu_lats = conf.fu_lats.random_element();
+    int deps = conf.deps.random_element();
+
+    // Ensure the size is at least 2 to allow for a misprediction region
+    if (size < 2) {
+        size = 2;
+    }
+
+    // Position the branch instruction
+    int before_spec = random_int(1, size - 1);
+    int after_spec = size - before_spec;
+    int spec = 20;
+
+    // If mispred_region is off
+    if (!mispred_region_on) {
+        spec = 0;
+        before_spec = size;
+        after_spec = 0;
+    }
+
+    vector<Instr> prog;
+
+    for (int i = 0; i < before_spec; i++) {
+        Instr instr;
+        instr.fu_type = random_int(0, conf.fu_num - 1);
+        instr.lat_fu = fu_lats[instr.fu_type];
+        instr.mispred_region = 0;
+
+        prog.push_back(instr);
+    }
+
+    if (mispred_region_on) {
+        prog[before_spec - 1].lat_fu = 1;
+        prog[before_spec - 1].mispred_region = spec;
+    }
+
+    for (int i = 0; i < spec; i++) {
+        Instr instr;
+        instr.fu_type = random_int(0, conf.fu_num - 1);
+        instr.lat_fu = fu_lats[instr.fu_type];
+        instr.mispred_region = 0;
+
+        prog.push_back(instr);
+    }
+
+    for (int i = 0; i < after_spec; i++) {
+        Instr instr;
+        instr.fu_type = random_int(0, conf.fu_num - 1);
+        instr.lat_fu = fu_lats[instr.fu_type];
+        instr.mispred_region = 0;
+
+        prog.push_back(instr);
+    }
+
+    for (int i = 0; i < deps; i++) {
+        int from = random_int(0, prog.size() - 2);
+        int to = random_int(from + 1, prog.size() - 1);
+        if (from < before_spec || from >= before_spec + spec) {
+            prog[to].data_deps.insert(from);
+        }
+    }
+
+    return prog;
+}

@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "Util.h"
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -40,9 +42,6 @@ void misprediction_on(std::vector<Instr>& prog);
 // Set br_pred to true for all instructions in the program
 void misprediction_off(std::vector<Instr>& prog);
 
-// Generate random program of given size, other parameters are hardcoded
-std::vector<Instr> random_program(int size);
-
 // Checks if porgram with all misprediction is exeuted faster than the one 
 // with all correct predictions
 bool has_TA(std::vector<Instr>& prog);
@@ -58,3 +57,16 @@ std::string dump_trace(const std::vector<Instr>& prog);
 
 // Dumps two traces to files in TLA+ format, first with all mispredictions, second with all correct predictions
 void dump_pair_of_traces(std::vector<Instr> prog, std::string filename1, std::string filename2);
+
+// Configuration for random program generation
+// RandomBox is a vector with a function to get a random element
+struct RandomProgConfig {
+    RandomBox<int> size;
+    RandomBox<std::vector<int>> fu_lats;
+    RandomBox<bool> mispred_region;
+    RandomBox<int> deps;
+    int fu_num = 2;
+};
+
+// Generates a random program based on the provided configuration
+std::vector<Instr> random_program(RandomProgConfig conf);

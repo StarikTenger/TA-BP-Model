@@ -23,6 +23,7 @@ set(TARGETS
     random_search
     compare_traces
     event_table
+    test_resolution_process
 )
 foreach(TARGET ${TARGETS})
     # Add an executable for each target using the sources and the target-specific cpp file

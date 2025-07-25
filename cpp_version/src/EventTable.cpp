@@ -8,6 +8,14 @@ bool Event::operator<(const Event& other) const {
     return std::tie(instr, type) < std::tie(other.instr, other.type);
 }
 
+bool Event::operator==(const Event& other) const {
+    return instr == other.instr && type == other.type;
+}
+
+bool Event::operator!=(const Event& other) const {
+    return !(*this == other);
+}
+
 EventTable::EventTable(int numInstructions) {
     table.resize(numInstructions, vector<int>(EVENT_NUM, -1));
 }
@@ -22,6 +30,10 @@ int EventTable::getEvent(int instruction, EventType eventType) {
 
 bool EventTable::operator==(const EventTable& other) const {
     return table == other.table;
+}
+
+bool EventTable::operator!=(const EventTable& other) const {
+    return !(*this == other);
 }
 
 void EventTable::fromProg(const std::vector<Instr>& prog) {
@@ -56,7 +68,6 @@ void EventTable::fromProg(const std::vector<Instr>& prog) {
                 setEvent(i, Event_Squashed, cc);
             }
         }
-        cout << endl;
     }
 }
 
@@ -70,8 +81,8 @@ void EventTable::print() const {
         {Event_COM, "COM"}, {Event_Squashed, "Sq"}
     };
 
-    if (!graph.empty()) {
-        for (const auto& entry : graph.back()) {
+    if (!connections.empty()) {
+        for (const auto& entry : connections.back()) {
             // Print dependency sets
             for (const auto& dep_set : entry.second) {
                 std::cout << "{";
@@ -93,7 +104,7 @@ void EventTable::print() const {
     for (int i = 0; i < table.size(); i++) { 
         std::cout << i + 1 << ": ";
         for (int j = 0; j < EVENT_NUM; j++) {
-            std::cout << table[i][j] << "\t";
+            std::cout << table[i][j] << "\t\t";
         }
         std::cout << std::endl;
     }
@@ -191,7 +202,7 @@ int EventTable::resolution_step(const std::vector<Instr>& prog) {
         }
     }
 
-    graph.push_back({});
+    connections.push_back({});
 
     if (last_update_reversed.size()) {
         for (const auto& upd : updates) {
@@ -211,10 +222,10 @@ int EventTable::resolution_step(const std::vector<Instr>& prog) {
                             events_from_mask.insert(Event{dep_instr, dep_event_type});
                         }
                     }
-                    if (graph.back().find(update_event) == graph.back().end()) {
-                        graph.back()[update_event] = {};
+                    if (connections.back().find(update_event) == connections.back().end()) {
+                        connections.back()[update_event] = {};
                     }
-                    graph.back()[update_event].insert(events_from_mask);
+                    connections.back()[update_event].insert(events_from_mask);
                     mask_gen.restrict_last();
                 }
             } while (mask_gen.next());
@@ -231,4 +242,53 @@ int EventTable::resolution_step(const std::vector<Instr>& prog) {
     }
 
     return conflict_count;
+}
+
+std::vector<std::vector<std::set<std::set<Event>>>> EventTable::extract_graph() const{
+    // Create a causality graph: for each event, a set of incomming multiedges
+    
+    // Initialize the graph structure
+    std::vector<std::vector<std::set<std::set<Event>>>> graph(table.size());
+    for (int instr = 0; instr < table.size(); instr++) {
+        graph[instr].resize(EVENT_NUM); 
+    }
+
+    // Fill the graph with connections
+    for (const auto& con_step : connections) {
+        for (const auto& entry : con_step) {
+            const Event& event = entry.first;
+            const std::set<std::set<Event>>& deps = entry.second;
+
+            // Add the event to the graph
+            for (const auto& dep_set : deps) {
+                graph[event.instr][event.type].insert(dep_set);
+            }
+        }
+    }
+
+    // Print the causality graph
+    static const std::map<int, std::string> event_names = {
+        {IF_Acq, "IF_a"}, {IF_Rel, "IF_r"},
+        {ID_Acq, "ID_a"}, {ID_Rel, "ID_r"},
+        {FU_Acq, "FU_a"}, {FU_Rel, "FU_r"},
+        {Event_COM, "COM"}, {Event_Squashed, "Sq"}
+    };
+
+    // std::cout << "Causality Graph:" << std::endl;
+    // for (int instr = 0; instr < graph.size(); ++instr) {
+    //     for (int event_type = 0; event_type < graph[instr].size(); ++event_type) {
+    //         for (const auto& dep_set : graph[instr][event_type]) {
+    //             std::cout << "{";
+    //             bool first = true;
+    //             for (const auto& ev : dep_set) {
+    //                 if (!first) std::cout << ", ";
+    //                 std::cout << "[" << ev.instr + 1 << ", " << event_names.at(ev.type) << "]";
+    //                 first = false;
+    //             }
+    //             std::cout << "} -> [" << instr + 1 << ", " << event_names.at(event_type) << "]" << std::endl;
+    //         }
+    //     }
+    // }
+
+    return graph;
 }

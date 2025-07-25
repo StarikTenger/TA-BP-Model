@@ -1,5 +1,6 @@
 #include "PipelineState.h"
 #include "Util.h"
+#include "Prog.h"
 
 #include <iostream>
 #include <vector>
@@ -11,56 +12,6 @@
 #include <sstream>
 
 using namespace std;
-
-vector<Instr> random_program(int size) {
-    vector<int> fu_lats = {4, 4};
-
-    int before_spec = random_int(1, size - 1);
-    int after_spec = size - before_spec;
-    int spec = 20;
-
-    vector<Instr> prog;
-
-    for (int i = 0; i < before_spec; i++) {
-        Instr instr;
-        instr.fu_type = random_int(0, FU_NUM - 1);
-        instr.lat_fu = fu_lats[instr.fu_type];
-        instr.mispred_region = 0;
-
-        prog.push_back(instr);
-    }
-    prog[before_spec - 1].lat_fu = 1;
-    prog[before_spec - 1].mispred_region = spec;
-
-    for (int i = 0; i < spec; i++) {
-        Instr instr;
-        instr.fu_type = random_int(0, FU_NUM - 1);
-        instr.lat_fu = fu_lats[instr.fu_type];
-        instr.mispred_region = 0;
-
-        prog.push_back(instr);
-    }
-
-    for (int i = 0; i < after_spec; i++) {
-        Instr instr;
-        instr.fu_type = random_int(0, FU_NUM - 1);
-        instr.lat_fu = fu_lats[instr.fu_type];
-        instr.mispred_region = 0;
-
-        prog.push_back(instr);
-    }
-
-    int deps = 2;
-    for (int i = 0; i < deps; i++) {
-        int from = random_int(0, prog.size() - 2);
-        int to = random_int(from + 1, prog.size() - 1);
-        if (from < before_spec || from >= before_spec + spec) {
-            prog[to].data_deps.insert(from);
-        }
-    }
-
-    return prog;
-}
 
 bool has_TA2(vector<Instr>& prog)
 {
@@ -116,7 +67,12 @@ void random_search_TA()
     int iterations = 10000000;
     int size = 4;
     for (int i = 0; i < iterations; i++) {
-        vector<Instr> prog = random_program(size);
+        RandomProgConfig conf;
+        conf.size = 5;
+        conf.fu_lats = {4,4};
+        conf.mispred_region = true;
+        conf.deps = {1,2,3,4};
+        vector<Instr> prog = random_program(conf);
         PipelineState state;
         
         if (has_TA(prog)) {
