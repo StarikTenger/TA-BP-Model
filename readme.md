@@ -1,4 +1,4 @@
-The detailed explanation is prodvided in pdf in following repository:
+The detailed explanation is provided in PDF in following repository:
 
 https://github.com/StarikTenger/Internship2025-report
 
@@ -49,6 +49,8 @@ Usage:
 
 The program prints a pair of traces to stdout.
 
+> NOTE: you simply can run *compare-traces.sh* providing input file name
+
 ### Input
 
 Input represents the sequence of instructions that enter the processor pipeline. Each line in input file represents such an instruction. The line starts with functional unit assigned to the instruction, that comes the optional tag (`#tagname`), after goes the list of dependencies (`@tagname`). In the end of the line FU latency has to be specified. `[t]` if latency is the same for both executions. `[t1|t2]` if need to specify different execution times for 2 execution traces.
@@ -87,7 +89,17 @@ More examples of inputs and outputs can be found in */examples* folder.
 
 ## Randomized search
 
+Needed for searching TA examples. The entry point is *random_search.cpp*.
+
+Generates random input pairs and verifies the desired property on them. See the parameters of random input config in structure `RandomProgConfig` in *Prog.h*.
+
+The current property to verify is `has_TA()` function which is also defined in *Prog.h* and implemented in *Prog.cpp*. The property simply compares the execution steps of the two traces.
+
 ## State space exploration
+
+Iterates through every possible input within a set of constraints (size, number of dependencies). See *exhaustive_search.h*.
+
+As well as randomized search no user interface, so the constraints are to be specified in `total_search_TA` function.
 
 # Output formats and visualization
 
