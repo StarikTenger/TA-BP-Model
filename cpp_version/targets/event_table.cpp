@@ -35,6 +35,14 @@ int main(int argc, char *argv[])
     event_table.fromProg(prog);
     event_table.print();
 
+    // Time bound approach
+    // for (int i = 0; i < 20; i++) {
+    //     for (int j = 0; event_table.resolution_step(prog_alt, i); j++) {
+    //         cout << "\n";
+    //         event_table.print();
+    //     }  
+    // }
+
     for (int i = 0; event_table.resolution_step(prog_alt) && i < 20; i++) {
         cout << "\n";
         event_table.print();

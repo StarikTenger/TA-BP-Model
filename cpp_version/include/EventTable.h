@@ -31,6 +31,10 @@ struct Event {
 struct EventTable {
     // (Instruction -> EventType -> TimeStamp) mapping
     std::vector<std::vector<int>> table;
+    std::vector<std::vector<int>> table_initial; // Initial state of the table
+
+    // Reversed updates for the last resolution step
+    // (Instruction, EventType, PreviousTimeStamp)
     std::vector<std::tuple<int, int, int>> last_update_reversed;
 
     // Connections between events derived from resolution steps
@@ -51,7 +55,7 @@ struct EventTable {
     void print() const;
     
     // Returns the number of events moved
-    int resolution_step(const std::vector<Instr>& prog);
+    int resolution_step(const std::vector<Instr>& prog, int time_bound=100);
 
     // Returns a causality graph: for each event, a set of incomming multiedges
     std::vector<std::vector<std::set<std::set<Event>>>> extract_graph() const;

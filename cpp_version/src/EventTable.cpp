@@ -69,6 +69,9 @@ void EventTable::fromProg(const std::vector<Instr>& prog) {
             }
         }
     }
+
+    // Store the initial state of the table
+    table_initial = table;
 }
 
 void EventTable::print() const {
@@ -183,7 +186,7 @@ int where_event(const std::vector<Instr>& prog, Event event, const vector<vector
 
 }
 
-int EventTable::resolution_step(const std::vector<Instr>& prog) {
+int EventTable::resolution_step(const std::vector<Instr>& prog, int time_bound) {
     int conflict_count = 0;
     std::vector<std::tuple<int, int, int>> updates; // (instr, event_type, new_time)
 
@@ -195,7 +198,7 @@ int EventTable::resolution_step(const std::vector<Instr>& prog) {
             while (!check_constraints(table, prog, instr, event_type, new_time)) {
                 ++new_time;
             }
-            if (new_time != current_time) {
+            if (new_time != current_time && new_time <= time_bound) {
                 ++conflict_count;
                 updates.emplace_back(instr, event_type, new_time);
             }
@@ -237,6 +240,7 @@ int EventTable::resolution_step(const std::vector<Instr>& prog) {
     for (const auto& upd : updates) {
         int instr, event_type, new_time;
         std::tie(instr, event_type, new_time) = upd;
+        // last_update_reversed.emplace_back(instr, event_type, table_initial[instr][event_type]);
         last_update_reversed.emplace_back(instr, event_type, table[instr][event_type]);
         table[instr][event_type] = new_time;
     }
