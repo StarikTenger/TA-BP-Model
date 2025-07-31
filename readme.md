@@ -2,6 +2,9 @@ The detailed explanation is provided in PDF in following repository:
 
 https://github.com/StarikTenger/Internship2025-report
 
+**Question or bug?**
+
+Reach me out at stariktenger@gmail.com or create an issue in this repository.
 
 # Timing anomaly searching framework
 
@@ -101,10 +104,39 @@ Iterates through every possible input within a set of constraints (size, number 
 
 As well as randomized search no user interface, so the constraints are to be specified in `total_search_TA` function.
 
-# Output formats and visualization
+# Output Formats and Visualization
 
-how to color outputs
+C++ program creates a plaintext output. To have a more readable trace, it can be converted into [drawio](https://www.drawio.com/) diagram. We recommend to use `drawio-diagram.sh` for that. This script executes runs C++ framework on a given input, generates drawio
 
-syntax highlight for .instr
 
-drawio converter
+Usage:
+```sh
+./drawio-diagram.sh <input_file>
+```
+
+For this script to work one should install drawio package and a [drawpyo](https://github.com/MerrimanInd/drawpyo) library for python 3.
+
+```sh
+sudo snap install drawio
+pip install drawpyo
+```
+
+
+# Resolution procedure
+
+More about how it works can be read here (TODO: link)
+
+At the moment the procedure works only for inputs without misprediction region.
+
+Script `drawio-diagram-resolution.sh` works the same way as `drawio-diagram.sh`: it generates a pair of traces and additionally draws the causality connections derived from the resolution procedure.
+
+Usage:
+```sh
+./drawio-diagram-resolution.sh <input_file>
+```
+
+`event-resolution.sh` opens a window with animated step-by-step resolution graph.
+
+```sh
+./drawio-diagram.sh <input_file>
+```
