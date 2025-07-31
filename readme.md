@@ -122,9 +122,9 @@ pip install drawpyo
 ```
 
 
-# Resolution procedure
+# Resolution Procedure
 
-More about how it works can be read here (TODO: link)
+More about how it works can be read [here](github.com/StarikTenger/Internship2025-report/blob/master/Towards a New Causality Definition.pdf).
 
 At the moment the procedure works only for inputs without misprediction region.
 
@@ -141,4 +141,10 @@ Usage:
 ./drawio-diagram.sh <input_file>
 ```
 
-TODO: latex table
+# LaTeX Table
+
+`input-rewrite.py` takes an input file and outputs it as a LaTeX table.
+
+```sh
+python3 input-rewrite.py <input_file>
+```
