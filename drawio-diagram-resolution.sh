@@ -1,10 +1,16 @@
 # Executes C++ framework on a given input and generates a drawio diagram from the output.
-# Additionally generates an event table from the input.
+# Additionally runs a resolution procedure from which restores the causality graph.
 # Usage: ./drawio-diagram-resolution.sh <input_file>
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <input_file>"
+    exit 1
+fi
 
 input=$1
 table_file=$input".event_table"
 diagram_file=$input".instr_compare.trd"
+
 
 cat $input >$table_file
 echo >>$table_file

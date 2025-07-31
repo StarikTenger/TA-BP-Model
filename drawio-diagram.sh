@@ -1,6 +1,11 @@
 # Executes C++ framework on a given input and generates a drawio diagram from the output.
 # Usage: ./drawio-diagram.sh <input_file>
 
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <input_file>"
+    exit 1
+fi
+
 input=$1
 diagram_file=$input".instr_compare.trd"
 

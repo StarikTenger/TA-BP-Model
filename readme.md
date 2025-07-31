@@ -140,3 +140,5 @@ Usage:
 ```sh
 ./drawio-diagram.sh <input_file>
 ```
+
+TODO: latex table

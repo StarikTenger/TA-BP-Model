@@ -619,6 +619,8 @@ if __name__ == "__main__":
 
     file = drawpyo.File()
     file.file_path = os.path.dirname(outfile)
+    if file.file_path == "":
+        file.file_path = "."
     file.file_name = os.path.basename(outfile)
     # Add a page
     page = drawpyo.Page(file=file)
